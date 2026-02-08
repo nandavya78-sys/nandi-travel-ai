@@ -3,235 +3,209 @@
 <head>
 <meta charset="UTF-8" />
 <title>Nandi Travel AI</title>
+
 <style>
+* { box-sizing: border-box; }
+
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #0b1220;
-    color: #fff;
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont;
+  background: #0f172a;
+  color: #e5e7eb;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
-#app {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-}
+
+/* Chat area */
 #chat {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
 }
+
+/* Message bubbles */
 .msg {
-    margin-bottom: 12px;
-}
-.user { color: #6cf; }
-.bot { color: #9f9; }
-
-#results {
-    padding: 10px 20px;
-}
-.card {
-    background: #111a2e;
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 10px;
+  max-width: 70%;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  border-radius: 14px;
+  line-height: 1.4;
 }
 
+.bot {
+  background: #1e293b;
+  align-self: flex-start;
+}
+
+.user {
+  background: #2563eb;
+  align-self: flex-end;
+}
+
+/* Input bar */
 #inputBar {
-    display: flex;
-    padding: 10px;
-    background: #060b16;
+  display: flex;
+  padding: 12px;
+  background: #020617;
+  border-top: 1px solid #1e293b;
 }
+
 #plus {
-    width: 40px;
-    font-size: 20px;
+  width: 40px;
+  font-size: 20px;
+  margin-right: 8px;
 }
-#input {
-    flex: 1;
-    padding: 8px;
-    font-size: 16px;
+
+#text {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  font-size: 16px;
 }
+
 #send {
-    padding: 8px 14px;
+  margin-left: 8px;
+  padding: 10px 14px;
 }
 
+/* Floating menu */
 #menu {
-    display: none;
-    background: #111;
-    padding: 10px;
-}
-.menu-btn {
-    margin-right: 10px;
+  position: absolute;
+  bottom: 70px;
+  left: 20px;
+  background: #020617;
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  display: none;
 }
 
-input, select {
-    padding: 6px;
-    margin-right: 6px;
+#menu button {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  color: #e5e7eb;
+  text-align: left;
+}
+
+#menu button:hover {
+  background: #1e293b;
+}
+
+/* Cards */
+.card {
+  background: #020617;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 12px;
 }
 </style>
 </head>
 
 <body>
-<div id="app">
 
 <div id="chat">
-    <div class="msg bot">Hi 👋 I’m Nandi Travel AI. Use + to search flights or hotels.</div>
+  <div class="msg bot">
+    👋 Hi! I’m <b>Nandi Travel AI</b>.<br>
+    Click <b>+</b> to search Flights or Hotels.
+  </div>
 </div>
 
 <div id="menu">
-    <button class="menu-btn" onclick="openFlights()">✈ Flights</button>
-    <button class="menu-btn" onclick="openHotels()">🏨 Hotels</button>
+  <button onclick="startFlights()">✈ Flights</button>
+  <button onclick="startHotels()">🏨 Hotels</button>
 </div>
-
-<div id="results"></div>
 
 <div id="inputBar">
-    <button id="plus" onclick="toggleMenu()">+</button>
-    <input id="input" placeholder="Ask something…" />
-    <button id="send" onclick="sendMsg()">Send</button>
-</div>
-
+  <button id="plus" onclick="toggleMenu()">+</button>
+  <input id="text" placeholder="Ask anything…" />
+  <button id="send" onclick="sendMsg()">Send</button>
 </div>
 
 <script>
-let mode = null;
+const chat = document.getElementById("chat");
+const menu = document.getElementById("menu");
 
-function addMsg(text, cls) {
-    const div = document.createElement("div");
-    div.className = "msg " + cls;
-    div.textContent = text;
-    document.getElementById("chat").appendChild(div);
-    document.getElementById("chat").scrollTop = 999999;
+function addMsg(text, who) {
+  const div = document.createElement("div");
+  div.className = "msg " + who;
+  div.innerHTML = text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
 }
 
 function toggleMenu() {
-    const m = document.getElementById("menu");
-    m.style.display = m.style.display === "block" ? "none" : "block";
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
 }
 
 function sendMsg() {
-    const input = document.getElementById("input");
-    if (!input.value) return;
-    addMsg(input.value, "user");
-    addMsg("Use + to search flights or hotels.", "bot");
-    input.value = "";
+  const t = document.getElementById("text");
+  if (!t.value) return;
+  addMsg(t.value, "user");
+  addMsg("Use + to search flights or hotels.", "bot");
+  t.value = "";
 }
 
-/* ---------- OpenStreetMap autocomplete ---------- */
-async function suggest(input, listId) {
-    const q = input.value;
-    if (q.length < 3) return;
-    const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${q}`
-    );
-    const data = await res.json();
-    const list = document.getElementById(listId);
-    list.innerHTML = "";
-    data.slice(0, 5).forEach(p => {
-        const o = document.createElement("option");
-        o.value = p.display_name;
-        list.appendChild(o);
-    });
-}
-
-/* ---------- Flights ---------- */
-function openFlights() {
-    mode = "flight";
-    document.getElementById("menu").style.display = "none";
-    document.getElementById("results").innerHTML = `
-        <h3>Flights</h3>
-        <input placeholder="From" oninput="suggest(this,'fromList')" list="fromList">
-        <datalist id="fromList"></datalist>
-
-        <input placeholder="To" oninput="suggest(this,'toList')" list="toList">
-        <datalist id="toList"></datalist>
-
-        <select id="stops">
-            <option value="">Any stops</option>
-            <option>Non-stop</option>
-            <option>1 Stop</option>
-        </select>
-
-        <input id="maxPrice" type="number" placeholder="Max price">
-
-        <button onclick="loadFlights()">Search</button>
-        <div id="cards"></div>
-    `;
-    addMsg("Searching flights ✈", "bot");
+/* ---------- Flights flow ---------- */
+function startFlights() {
+  menu.style.display = "none";
+  addMsg(`
+    <b>Flight search</b><br><br>
+    From: <input id="from"><br><br>
+    To: <input id="to"><br><br>
+    Date: <input type="date" id="fdate"><br><br>
+    <button onclick="loadFlights()">Search Flights</button>
+  `, "bot");
 }
 
 async function loadFlights() {
-    const res = await fetch("/flight");
-    let data = await res.json();
+  const res = await fetch("/flight");
+  const data = await res.json();
 
-    const stops = document.getElementById("stops").value;
-    const max = document.getElementById("maxPrice").value;
-
-    if (stops)
-        data = data.filter(f => f.stops === stops);
-    if (max)
-        data = data.filter(f => parseInt(f.price.replace(/[^0-9]/g,'')) <= max);
-
-    renderCards(data, f =>
-        `<b>${f.airline}</b><br>${f.route}<br>${f.stops}<br>₹${f.price}`
-    );
+  data.forEach(f => {
+    addMsg(`
+      <div class="card">
+        ✈ <b>${f.airline}</b><br>
+        ${f.route}<br>
+        ${f.stops}<br>
+        💰 ${f.price}
+      </div>
+    `, "bot");
+  });
 }
 
-/* ---------- Hotels ---------- */
-function openHotels() {
-    mode = "hotel";
-    document.getElementById("menu").style.display = "none";
-    document.getElementById("results").innerHTML = `
-        <h3>Hotels</h3>
-        <input placeholder="City" oninput="suggest(this,'cityList')" list="cityList">
-        <datalist id="cityList"></datalist>
-
-        <select id="stars">
-            <option value="">Any stars</option>
-            <option value="5">5★</option>
-            <option value="4">4★</option>
-            <option value="3">3★</option>
-        </select>
-
-        <input id="hotelPrice" type="number" placeholder="Max price/night">
-
-        <button onclick="loadHotels()">Search</button>
-        <div id="cards"></div>
-    `;
-    addMsg("Searching hotels 🏨", "bot");
+/* ---------- Hotels flow ---------- */
+function startHotels() {
+  menu.style.display = "none";
+  addMsg(`
+    <b>Hotel search</b><br><br>
+    City: <input id="city"><br><br>
+    Check-in: <input type="date"><br>
+    Check-out: <input type="date"><br><br>
+    <button onclick="loadHotels()">Search Hotels</button>
+  `, "bot");
 }
 
 async function loadHotels() {
-    const res = await fetch("/hotel");
-    let data = await res.json();
+  const res = await fetch("/hotel");
+  const data = await res.json();
 
-    const stars = document.getElementById("stars").value;
-    const max = document.getElementById("hotelPrice").value;
-
-    if (stars)
-        data = data.filter(h => h.stars == stars);
-    if (max)
-        data = data.filter(h => parseInt(h.price.replace(/[^0-9]/g,'')) <= max);
-
-    renderCards(data, h =>
-        `<b>${h.name}</b><br>${h.stars}★<br>${h.distance}<br>₹${h.price}`
-    );
-}
-
-/* ---------- Render cards ---------- */
-function renderCards(data, template) {
-    const c = document.getElementById("cards");
-    c.innerHTML = "";
-    if (!data.length) {
-        c.innerHTML = "No results";
-        return;
-    }
-    data.forEach(x => {
-        const d = document.createElement("div");
-        d.className = "card";
-        d.innerHTML = template(x);
-        c.appendChild(d);
-    });
+  data.forEach(h => {
+    addMsg(`
+      <div class="card">
+        🏨 <b>${h.name}</b><br>
+        ⭐ ${h.stars}<br>
+        📍 ${h.distance}<br>
+        💰 ${h.price}
+      </div>
+    `, "bot");
+  });
 }
 </script>
+
 </body>
 </html>
