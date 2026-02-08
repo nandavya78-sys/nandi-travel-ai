@@ -1,206 +1,237 @@
-﻿<!DOCTYPE html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Nandi’s Travel AI (Demo)</title>
-
+<meta charset="UTF-8" />
+<title>Nandi Travel AI</title>
 <style>
-body{
-  margin:0;font-family:Arial;background:#0b1020;color:#fff;
-  height:100vh;overflow:hidden;
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #0b1220;
+    color: #fff;
 }
-header{background:#000;padding:14px;text-align:center;font-weight:bold;}
-#chat{padding:20px;height:calc(100vh - 140px);overflow-y:auto;}
-.msg{background:#1b2238;padding:12px;border-radius:8px;margin-bottom:10px;max-width:80%;}
-.user{background:#24304f;margin-left:auto;}
-.ai{background:#1b2238;}
-.card{background:#111827;padding:12px;border-radius:8px;margin:10px 0;}
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+#chat {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+.msg {
+    margin-bottom: 12px;
+}
+.user { color: #6cf; }
+.bot { color: #9f9; }
 
-#panel{
-  display:none;position:fixed;bottom:60px;left:10px;right:10px;
-  background:#0e1530;padding:12px;border-radius:8px;z-index:9999;
+#results {
+    padding: 10px 20px;
+}
+.card {
+    background: #111a2e;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
 }
 
-#panel input,#panel select{width:160px;padding:6px;margin:4px;font-size:13px;}
-
-.autolist{
-  position:absolute;background:#020617;border:1px solid #333;z-index:10000;
+#inputBar {
+    display: flex;
+    padding: 10px;
+    background: #060b16;
 }
-.autolist div{padding:6px;cursor:pointer;}
-.autolist div:hover{background:#2563eb;}
-
-#inputBar{
-  position:fixed;bottom:0;left:0;width:100%;
-  display:flex;padding:10px;background:#000;gap:8px;z-index:10001;
+#plus {
+    width: 40px;
+    font-size: 20px;
 }
-#plus{width:40px;font-size:20px;}
-#text{flex:1;padding:10px;}
-#send{padding:10px 16px;}
+#input {
+    flex: 1;
+    padding: 8px;
+    font-size: 16px;
+}
+#send {
+    padding: 8px 14px;
+}
+
+#menu {
+    display: none;
+    background: #111;
+    padding: 10px;
+}
+.menu-btn {
+    margin-right: 10px;
+}
+
+input, select {
+    padding: 6px;
+    margin-right: 6px;
+}
 </style>
 </head>
 
 <body>
-
-<header>Nandi’s Travel AI (Demo)</header>
+<div id="app">
 
 <div id="chat">
-  <div class="msg ai">Hi there 👋 How can I help you?</div>
+    <div class="msg bot">Hi 👋 I’m Nandi Travel AI. Use + to search flights or hotels.</div>
 </div>
 
-<div id="panel"></div>
+<div id="menu">
+    <button class="menu-btn" onclick="openFlights()">✈ Flights</button>
+    <button class="menu-btn" onclick="openHotels()">🏨 Hotels</button>
+</div>
+
+<div id="results"></div>
 
 <div id="inputBar">
-  <button id="plus">+</button>
-  <input id="text" placeholder="Type a message (Enter)">
-  <button id="send">Send</button>
+    <button id="plus" onclick="toggleMenu()">+</button>
+    <input id="input" placeholder="Ask something…" />
+    <button id="send" onclick="sendMsg()">Send</button>
+</div>
+
 </div>
 
 <script>
-const chat=document.getElementById("chat");
-const panel=document.getElementById("panel");
-const text=document.getElementById("text");
+let mode = null;
 
-function addMsg(html,type){
-  const d=document.createElement("div");
-  d.className="msg "+type;
-  d.innerHTML=html;
-  chat.appendChild(d);
-  chat.scrollTop=chat.scrollHeight;
+function addMsg(text, cls) {
+    const div = document.createElement("div");
+    div.className = "msg " + cls;
+    div.textContent = text;
+    document.getElementById("chat").appendChild(div);
+    document.getElementById("chat").scrollTop = 999999;
 }
 
-/* CHAT */
-function sendChat(){
-  const v=text.value.trim();
-  if(!v)return;
-  addMsg(v,"user");
-  text.value="";
-  fetch("/chat",{method:"POST"}).then(r=>r.text()).then(t=>addMsg(t,"ai"));
+function toggleMenu() {
+    const m = document.getElementById("menu");
+    m.style.display = m.style.display === "block" ? "none" : "block";
 }
-send.onclick=sendChat;
-text.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();sendChat();}};
 
-/* PLUS */
-plus.onclick=()=>{
-  panel.style.display = panel.style.display==="block"?"none":"block";
-  panel.innerHTML=`
-    <select id="mode">
-      <option value="">Select service</option>
-      <option value="flight">✈ Flights</option>
-      <option value="hotel">🏨 Hotels</option>
-    </select>
-    <div id="fields"></div>
-  `;
-  mode.onchange=renderFields;
-};
+function sendMsg() {
+    const input = document.getElementById("input");
+    if (!input.value) return;
+    addMsg(input.value, "user");
+    addMsg("Use + to search flights or hotels.", "bot");
+    input.value = "";
+}
 
-/* AUTOCOMPLETE */
-function auto(inp){
-  const q=inp.value;
-  if(q.length<3)return;
-  fetch("https://nominatim.openstreetmap.org/search?format=json&q="+encodeURIComponent(q))
-    .then(r=>r.json())
-    .then(d=>{
-      const box=document.getElementById(inp.id+"List");
-      box.innerHTML="";
-      d.slice(0,5).forEach(i=>{
-        const div=document.createElement("div");
-        div.textContent=i.display_name;
-        div.onclick=()=>{inp.value=i.display_name;box.innerHTML="";};
-        box.appendChild(div);
-      });
+/* ---------- OpenStreetMap autocomplete ---------- */
+async function suggest(input, listId) {
+    const q = input.value;
+    if (q.length < 3) return;
+    const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${q}`
+    );
+    const data = await res.json();
+    const list = document.getElementById(listId);
+    list.innerHTML = "";
+    data.slice(0, 5).forEach(p => {
+        const o = document.createElement("option");
+        o.value = p.display_name;
+        list.appendChild(o);
     });
 }
 
-/* RENDER FORMS */
-function renderFields(){
-  const f=document.getElementById("fields");
-  if(mode.value==="flight"){
-    f.innerHTML=`
-      <div style="position:relative">
-        <input id="from" placeholder="From" oninput="auto(this)">
-        <div id="fromList" class="autolist"></div>
-      </div>
-      <div style="position:relative">
-        <input id="to" placeholder="To" oninput="auto(this)">
-        <div id="toList" class="autolist"></div>
-      </div>
-      <input type="date" id="d1">
-      <input type="date" id="d2">
-      <select id="stops">
-        <option value="any">Any Stops</option>
-        <option value="0">Non-stop</option>
-        <option value="1">1 Stop</option>
-      </select>
-      <select id="price">
-        <option value="any">Any Price</option>
-        <option value="30000">Under ₹30,000</option>
-        <option value="35000">Under ₹35,000</option>
-      </select>
-      <button onclick="searchFlight()">Search Flights</button>
+/* ---------- Flights ---------- */
+function openFlights() {
+    mode = "flight";
+    document.getElementById("menu").style.display = "none";
+    document.getElementById("results").innerHTML = `
+        <h3>Flights</h3>
+        <input placeholder="From" oninput="suggest(this,'fromList')" list="fromList">
+        <datalist id="fromList"></datalist>
+
+        <input placeholder="To" oninput="suggest(this,'toList')" list="toList">
+        <datalist id="toList"></datalist>
+
+        <select id="stops">
+            <option value="">Any stops</option>
+            <option>Non-stop</option>
+            <option>1 Stop</option>
+        </select>
+
+        <input id="maxPrice" type="number" placeholder="Max price">
+
+        <button onclick="loadFlights()">Search</button>
+        <div id="cards"></div>
     `;
-  }
+    addMsg("Searching flights ✈", "bot");
+}
 
-  if(mode.value==="hotel"){
-    f.innerHTML=`
-      <div style="position:relative">
-        <input id="loc" placeholder="Location" oninput="auto(this)">
-        <div id="locList" class="autolist"></div>
-      </div>
-      <input type="date" id="d1">
-      <input type="date" id="d2">
-      <select id="star">
-        <option>Any Star</option>
-        <option>3 Star</option>
-        <option>4 Star</option>
-        <option>5 Star</option>
-      </select>
-      <select id="dist">
-        <option>1 mile</option>
-        <option>2 miles</option>
-        <option>5 miles</option>
-        <option>10 miles</option>
-      </select>
-      <button onclick="searchHotel()">Search Hotels</button>
+async function loadFlights() {
+    const res = await fetch("/flight");
+    let data = await res.json();
+
+    const stops = document.getElementById("stops").value;
+    const max = document.getElementById("maxPrice").value;
+
+    if (stops)
+        data = data.filter(f => f.stops === stops);
+    if (max)
+        data = data.filter(f => parseInt(f.price.replace(/[^0-9]/g,'')) <= max);
+
+    renderCards(data, f =>
+        `<b>${f.airline}</b><br>${f.route}<br>${f.stops}<br>₹${f.price}`
+    );
+}
+
+/* ---------- Hotels ---------- */
+function openHotels() {
+    mode = "hotel";
+    document.getElementById("menu").style.display = "none";
+    document.getElementById("results").innerHTML = `
+        <h3>Hotels</h3>
+        <input placeholder="City" oninput="suggest(this,'cityList')" list="cityList">
+        <datalist id="cityList"></datalist>
+
+        <select id="stars">
+            <option value="">Any stars</option>
+            <option value="5">5★</option>
+            <option value="4">4★</option>
+            <option value="3">3★</option>
+        </select>
+
+        <input id="hotelPrice" type="number" placeholder="Max price/night">
+
+        <button onclick="loadHotels()">Search</button>
+        <div id="cards"></div>
     `;
-  }
+    addMsg("Searching hotels 🏨", "bot");
 }
 
-/* SEARCH */
-function searchFlight(){
-  addMsg("Searching flights…","ai");
-  panel.style.display="none";
-  fetch("/flight",{method:"POST"}).then(r=>r.json()).then(d=>{
-    let html="";
-    d.forEach(f=>{
-      html+=`
-      <div class="card">
-        ✈ <b>${f.airline}</b><br>
-        ${f.route}<br>
-        Stops: ${f.stops}<br>
-        <b>${f.price}</b>
-      </div>`;
-    });
-    addMsg(html,"ai");
-  });
+async function loadHotels() {
+    const res = await fetch("/hotel");
+    let data = await res.json();
+
+    const stars = document.getElementById("stars").value;
+    const max = document.getElementById("hotelPrice").value;
+
+    if (stars)
+        data = data.filter(h => h.stars == stars);
+    if (max)
+        data = data.filter(h => parseInt(h.price.replace(/[^0-9]/g,'')) <= max);
+
+    renderCards(data, h =>
+        `<b>${h.name}</b><br>${h.stars}★<br>${h.distance}<br>₹${h.price}`
+    );
 }
 
-function searchHotel(){
-  addMsg("Searching hotels…","ai");
-  panel.style.display="none";
-  fetch("/hotel",{method:"POST"}).then(r=>r.json()).then(d=>{
-    let html="";
-    d.forEach(h=>{
-      html+=`
-      <div class="card">
-        🏨 <b>${h.name}</b><br>
-        ${h.star} ★ | ${h.dist}<br>
-        <b>${h.price}</b>
-      </div>`;
+/* ---------- Render cards ---------- */
+function renderCards(data, template) {
+    const c = document.getElementById("cards");
+    c.innerHTML = "";
+    if (!data.length) {
+        c.innerHTML = "No results";
+        return;
+    }
+    data.forEach(x => {
+        const d = document.createElement("div");
+        d.className = "card";
+        d.innerHTML = template(x);
+        c.appendChild(d);
     });
-    addMsg(html,"ai");
-  });
 }
 </script>
-
 </body>
 </html>
