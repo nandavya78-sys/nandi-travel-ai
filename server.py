@@ -44,5 +44,11 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())
 
-print("Server running at http://localhost:8000")
-HTTPServer(("localhost",8000),Handler).serve_forever()
+import os
+
+PORT = int(os.environ.get("PORT", 8000))
+
+print(f"Server running on 0.0.0.0:{PORT}")
+HTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
+
+
