@@ -51,4 +51,9 @@ PORT = int(os.environ.get("PORT", 8000))
 print(f"Server running on 0.0.0.0:{PORT}")
 HTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
 
+Fix Railway PORT binding
+Use Railway PORT environment variable
+
+
+
 
