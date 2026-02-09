@@ -1,209 +1,139 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8" />
 <title>Nandi Travel AI</title>
 
-<style>
-* { box-sizing: border-box; }
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
+<style>
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont;
-  background: #0f172a;
+  background: #0b1220;
+  font-family: system-ui;
   color: #e5e7eb;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
 }
 
-/* Chat area */
-#chat {
-  flex: 1;
-  overflow-y: auto;
+.header {
+  padding: 16px;
+  font-size: 20px;
+  font-weight: bold;
+  background: #020617;
+  text-align: center;
+}
+
+.chat {
   padding: 20px;
+  height: calc(100vh - 140px);
+  overflow-y: auto;
 }
 
-/* Message bubbles */
 .msg {
   max-width: 70%;
-  padding: 12px 16px;
   margin-bottom: 14px;
-  border-radius: 14px;
-  line-height: 1.4;
+  padding: 12px;
+  border-radius: 10px;
 }
 
-.bot {
-  background: #1e293b;
-  align-self: flex-start;
-}
+.bot { background: #1e293b; }
+.user { background: #2563eb; margin-left: auto; }
 
-.user {
-  background: #2563eb;
-  align-self: flex-end;
-}
-
-/* Input bar */
-#inputBar {
+.input-bar {
   display: flex;
+  gap: 8px;
   padding: 12px;
   background: #020617;
-  border-top: 1px solid #1e293b;
 }
 
-#plus {
-  width: 40px;
-  font-size: 20px;
-  margin-right: 8px;
-}
-
-#text {
-  flex: 1;
+input, button, select {
   padding: 10px;
-  border-radius: 8px;
+  border-radius: 6px;
   border: none;
-  font-size: 16px;
 }
 
-#send {
-  margin-left: 8px;
-  padding: 10px 14px;
+input { flex: 1; }
+
+button {
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
 }
 
-/* Floating menu */
-#menu {
-  position: absolute;
-  bottom: 70px;
-  left: 20px;
-  background: #020617;
-  border: 1px solid #1e293b;
-  border-radius: 10px;
+.mode-panel {
   display: none;
-}
-
-#menu button {
-  display: block;
-  width: 100%;
-  padding: 10px 16px;
-  background: none;
-  border: none;
-  color: #e5e7eb;
-  text-align: left;
-}
-
-#menu button:hover {
-  background: #1e293b;
-}
-
-/* Cards */
-.card {
   background: #020617;
-  border: 1px solid #1e293b;
-  border-radius: 12px;
-  padding: 14px;
-  margin-top: 12px;
+  padding: 12px;
+  gap: 8px;
 }
 </style>
 </head>
 
 <body>
 
-<div id="chat">
-  <div class="msg bot">
-    👋 Hi! I’m <b>Nandi Travel AI</b>.<br>
-    Click <b>+</b> to search Flights or Hotels.
-  </div>
+<div class="header">✈️ Nandi Travel AI</div>
+
+<div class="chat" id="chat">
+  <div class="msg bot">Hi there! How can I help you today?</div>
 </div>
 
-<div id="menu">
-  <button onclick="startFlights()">✈ Flights</button>
-  <button onclick="startHotels()">🏨 Hotels</button>
+<div class="mode-panel" id="modePanel">
+  <button onclick="loadFlights()">Flights</button>
+  <button onclick="loadHotels()">Hotels</button>
 </div>
 
-<div id="inputBar">
-  <button id="plus" onclick="toggleMenu()">+</button>
-  <input id="text" placeholder="Ask anything…" />
-  <button id="send" onclick="sendMsg()">Send</button>
+<div class="input-bar">
+  <button onclick="togglePanel()">+</button>
+  <input id="text" placeholder="Type a message…" />
+  <button onclick="send()">Send</button>
 </div>
 
 <script>
-const chat = document.getElementById("chat");
-const menu = document.getElementById("menu");
-
-function addMsg(text, who) {
-  const div = document.createElement("div");
-  div.className = "msg " + who;
-  div.innerHTML = text;
-  chat.appendChild(div);
+function addMsg(text, cls) {
+  const d = document.createElement("div");
+  d.className = "msg " + cls;
+  d.innerText = text;
+  chat.appendChild(d);
   chat.scrollTop = chat.scrollHeight;
 }
 
-function toggleMenu() {
-  menu.style.display = menu.style.display === "block" ? "none" : "block";
+function togglePanel() {
+  const p = document.getElementById("modePanel");
+  p.style.display = p.style.display === "flex" ? "none" : "flex";
 }
 
-function sendMsg() {
-  const t = document.getElementById("text");
-  if (!t.value) return;
-  addMsg(t.value, "user");
-  addMsg("Use + to search flights or hotels.", "bot");
-  t.value = "";
+function send() {
+  const t = text.value;
+  if (!t) return;
+  addMsg(t, "user");
+  text.value = "";
+
+  fetch("/chat", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({message: t})
+  })
+  .then(r => r.json())
+  .then(d => addMsg(d.reply, "bot"));
 }
 
-/* ---------- Flights flow ---------- */
-function startFlights() {
-  menu.style.display = "none";
-  addMsg(`
-    <b>Flight search</b><br><br>
-    From: <input id="from"><br><br>
-    To: <input id="to"><br><br>
-    Date: <input type="date" id="fdate"><br><br>
-    <button onclick="loadFlights()">Search Flights</button>
-  `, "bot");
+function loadFlights() {
+  fetch("/flight", {method:"POST"})
+    .then(r => r.json())
+    .then(d => {
+      d.forEach(f =>
+        addMsg(`✈️ ${f.airline} | ${f.route} | ${f.stops} | ${f.price}`, "bot")
+      );
+    });
 }
 
-async function loadFlights() {
-  const res = await fetch("/flight");
-  const data = await res.json();
-
-  data.forEach(f => {
-    addMsg(`
-      <div class="card">
-        ✈ <b>${f.airline}</b><br>
-        ${f.route}<br>
-        ${f.stops}<br>
-        💰 ${f.price}
-      </div>
-    `, "bot");
-  });
-}
-
-/* ---------- Hotels flow ---------- */
-function startHotels() {
-  menu.style.display = "none";
-  addMsg(`
-    <b>Hotel search</b><br><br>
-    City: <input id="city"><br><br>
-    Check-in: <input type="date"><br>
-    Check-out: <input type="date"><br><br>
-    <button onclick="loadHotels()">Search Hotels</button>
-  `, "bot");
-}
-
-async function loadHotels() {
-  const res = await fetch("/hotel");
-  const data = await res.json();
-
-  data.forEach(h => {
-    addMsg(`
-      <div class="card">
-        🏨 <b>${h.name}</b><br>
-        ⭐ ${h.stars}<br>
-        📍 ${h.distance}<br>
-        💰 ${h.price}
-      </div>
-    `, "bot");
-  });
+function loadHotels() {
+  fetch("/hotel", {method:"POST"})
+    .then(r => r.json())
+    .then(d => {
+      d.forEach(h =>
+        addMsg(`🏨 ${h.name} (${h.stars}⭐) – ${h.price}`, "bot")
+      );
+    });
 }
 </script>
 
