@@ -257,3 +257,15 @@ function exportPDF(){
   pdf.save("Nandi_Travel_Itinerary.pdf");
 }
 </script>
+<button onclick="clearDraft()">Clear Draft</button>
+  <script>
+function clearDraft(){
+  if(!confirm("Clear saved itinerary?")) return;
+  localStorage.removeItem("nandiCart");
+  cart = [];
+  renderCart();
+  alert("Draft cleared");
+}
+</script>
+
+
