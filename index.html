@@ -1,373 +1,209 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>Nandi Travel AI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
 <style>
-body{margin:0;font-family:Arial;background:#0b1220;color:white}
-header{padding:14px;font-size:20px;border-bottom:1px solid #1f2937}
-#chat{max-width:900px;margin:30px auto 120px}
-.message{background:#111827;padding:14px;border-radius:10px;margin-bottom:12px}
-.user{background:#2563eb;text-align:right}
-.form{display:none;background:#020617;padding:16px;border-radius:10px;margin-bottom:16px}
-input,select,button{padding:8px;border-radius:6px;border:none;font-size:14px}
-button{background:#2563eb;color:white;cursor:pointer}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-.card{background:white;color:black;padding:14px;border-radius:10px}
-footer{position:fixed;bottom:0;width:100%;background:#020617;padding:10px;display:flex;gap:8px}
-footer input{flex:1}
-#plus{position:fixed;bottom:80px;left:20px;width:48px;height:48px;border-radius:50%;font-size:24px}
-#menu{position:fixed;bottom:140px;left:20px;display:none;flex-direction:column;gap:8px}
-#cart{background:#020617;padding:14px;border-radius:10px;margin-top:20px}
-.small{font-size:12px;color:#9ca3af}
+body {
+  margin: 0;
+  background: #0b1020;
+  color: #fff;
+  font-family: Arial, sans-serif;
+}
+header {
+  padding: 16px;
+  font-weight: bold;
+}
+#chat {
+  max-width: 900px;
+  margin: auto;
+  padding-bottom: 120px;
+}
+.message {
+  margin: 10px 0;
+}
+.user { text-align: right; }
+.bot { opacity: 0.85; }
+
+#inputBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #0b1020;
+  padding: 10px;
+  display: flex;
+  gap: 6px;
+}
+#chatInput {
+  flex: 1;
+  padding: 10px;
+}
+button {
+  padding: 10px;
+  cursor: pointer;
+}
+#plusMenu {
+  display: none;
+  background: #111;
+  padding: 10px;
+  margin: 10px 0;
+}
+.section {
+  display: none;
+  background: #111;
+  padding: 15px;
+  margin-top: 10px;
+}
+.card {
+  background: #fff;
+  color: #000;
+  padding: 10px;
+  margin: 8px 0;
+}
+#itinerary {
+  background: #111;
+  padding: 15px;
+  margin-top: 15px;
+}
 </style>
 </head>
 
 <body>
 
-<header>✈️ Nandi Travel AI</header>
+<header>✈ Nandi Travel AI</header>
 
 <div id="chat">
-  <div class="message">Hi 👋 How can I help you today?</div>
+  <div class="message bot">Hi 👋 How can I help you today?</div>
 
-  <!-- FLIGHTS -->
-  <div id="flightForm" class="form">
+  <div id="plusMenu">
+    <button onclick="openFlights()">✈ Flights</button>
+    <button onclick="openHotels()">🏨 Hotels</button>
+  </div>
+
+  <div id="flights" class="section">
     <h3>Flights</h3>
-
-    <input placeholder="From city">
-    <input placeholder="To city"><br><br>
-
-    <label class="small">Departure</label>
-    <input type="date">
-    <label class="small">Return</label>
-    <input type="date"><br><br>
-
-    <select id="stopFilter">
-      <option value="Any">Any stops</option>
-      <option value="Non-stop">Non-stop</option>
-      <option value="1 Stop">1 Stop</option>
-    </select>
-
-    <select onchange="fareMode=this.value">
-      <option value="public">Public Fare</option>
-      <option value="corporate">Corporate Fare</option>
-    </select>
-
-    <br><br>
-    <button onclick="loadFlights()">Search Flights</button>
+    <div id="flightResults"></div>
   </div>
 
-  <!-- HOTELS -->
-  <div id="hotelForm" class="form">
+  <div id="hotels" class="section">
     <h3>Hotels</h3>
-
-    <input placeholder="City"><br><br>
-
-    <label class="small">Check-in</label>
-    <input type="date">
-    <label class="small">Check-out</label>
-    <input type="date"><br><br>
-
-    <select id="starFilter">
-      <option>Any stars</option>
-      <option>3 Star</option>
-      <option>4 Star</option>
-      <option>5 Star</option>
-    </select>
-
-    <select id="distanceFilter">
-      <option>Within 1 km</option>
-      <option>Within 5 km</option>
-      <option>Within 10 km</option>
-      <option>Within 30 km</option>
-    </select>
-
-    <br><br>
-    <button onclick="loadHotels()">Search Hotels</button>
+    <div id="hotelResults"></div>
   </div>
 
-  <div id="results"></div>
-
-  <div id="cart">
-    <h3>🧳 Itinerary</h3>
-    <div id="cartItems"></div>
-    <button onclick="exportPDF()">Export PDF</button>
+  <div id="itinerary">
+    <h3>📋 Itinerary</h3>
+    <div id="cart"></div>
     <button onclick="saveDraft()">Save Draft</button>
+    <button onclick="loadDraft()">Load Draft</button>
+    <button onclick="clearDraft()">Clear Draft</button>
+    <button onclick="exportPDF()">Export PDF</button>
   </div>
 </div>
 
-<div id="menu">
-  <button onclick="showFlights()">✈ Flights</button>
-  <button onclick="showHotels()">🏨 Hotels</button>
+<div id="inputBar">
+  <button id="plusBtn">+</button>
+  <input id="chatInput" placeholder="Type a message..." />
+  <button id="sendBtn">Send</button>
 </div>
 
-<button id="plus" onclick="toggleMenu()">+</button>
-
-<footer>
-  <input id="chatInput" placeholder="Ask me about flights or hotels">
-  <button onclick="sendChat()">Send</button>
-</footer>
-
 <script>
-let cart=[];
-let fareMode="public";
+const chat = document.getElementById("chat");
+const chatInput = document.getElementById("chatInput");
+const plusMenu = document.getElementById("plusMenu");
+const flights = document.getElementById("flights");
+const hotels = document.getElementById("hotels");
+const cartDiv = document.getElementById("cart");
 
-function toggleMenu(){
-  menu.style.display = menu.style.display==="flex"?"none":"flex";
-}
-function showFlights(){
-  flightForm.style.display="block";
-  hotelForm.style.display="none";
-  menu.style.display="none";
-}
-function showHotels(){
-  hotelForm.style.display="block";
-  flightForm.style.display="none";
-  menu.style.display="none";
-}
+let cart = [];
 
-function sendChat(){
-  if(!chatInput.value) return;
-  addMsg(chatInput.value,true);
-  addMsg("Sure 👍 Use + to search flights or hotels.");
-  chatInput.value="";
-}
-function addMsg(t,user=false){
-  const d=document.createElement("div");
-  d.className="message"+(user?" user":"");
-  d.innerText=t;
-  chat.appendChild(d);
-}
-
-function loadFlights(){
-fetch("/flights").then(r=>r.json()).then(data=>{
- let html='<div class="grid">';
- data.forEach(f=>{
-  if(stopFilter.value!=="Any" && f.stops!==stopFilter.value) return;
-  html+=`
-  <div class="card">
-    <b>${f.airline}</b><br>
-    ${f.route}<br>
-    Stops: ${f.stops}<br>
-    ₹${f[fareMode]} + GST ₹${f.gst}<br>
-    <button onclick='addCart(${JSON.stringify(f)},"flight")'>Add</button>
-  </div>`;
- });
- html+='</div>';
- results.innerHTML=html;
-});
-}
-
-function loadHotels(){
-fetch("/hotels").then(r=>r.json()).then(data=>{
- let html='<div class="grid">';
- data.forEach(h=>{
-  html+=`
-  <div class="card">
-    <b>${h.name}</b><br>
-    ⭐ ${h.stars}<br>
-    Distance: ${h.distance} km<br>
-    ₹${h.price}<br>
-    <button onclick='addCart(${JSON.stringify(h)},"hotel")'>Add</button>
-  </div>`;
- });
- html+='</div>';
- results.innerHTML=html;
-});
-}
-
-function addCart(item,type){
- cart.push({type,...item});
- renderCart();
-}
-function renderCart(){
- cartItems.innerHTML="";
- cart.forEach(i=>{
-  cartItems.innerHTML+=`<div>${i.type.toUpperCase()} – ${i.airline||i.name}</div>`;
- });
-}
-
-function saveDraft(){
- localStorage.setItem("nandiCart",JSON.stringify(cart));
- alert("Draft saved");
-}
-function loadDraft(){
- const d=localStorage.getItem("nandiCart");
- if(d){cart=JSON.parse(d);renderCart();}
-}
-loadDraft();
-
-<script>
-function exportPDF(){
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF();
-
-  let y = 20;
-  let total = 0;
-
-  pdf.setFontSize(16);
-  pdf.text("Nandi Travel AI – Itinerary", 20, y);
-  y += 10;
-
-  pdf.setFontSize(10);
-  pdf.text(`Generated on: ${new Date().toLocaleString()}`, 20, y);
-  y += 10;
-
-  pdf.setFontSize(12);
-
-  cart.forEach((item, idx) => {
-    pdf.text(`${idx + 1}. ${item.type.toUpperCase()}`, 20, y);
-    y += 6;
-
-    if(item.type === "flight"){
-      const base = item[fareMode] || 0;
-      const gst = item.gst || 0;
-      const sum = base + gst;
-      total += sum;
-
-      pdf.setFontSize(10);
-      pdf.text(`Airline: ${item.airline}`, 24, y); y+=5;
-      pdf.text(`Route: ${item.route}`, 24, y); y+=5;
-      pdf.text(`Stops: ${item.stops}`, 24, y); y+=5;
-      pdf.text(`Fare (${fareMode}): ₹${base}`, 24, y); y+=5;
-      pdf.text(`GST: ₹${gst}`, 24, y); y+=5;
-      pdf.text(`Total: ₹${sum}`, 24, y); y+=8;
-    }
-
-    if(item.type === "hotel"){
-      total += item.price || 0;
-
-      pdf.setFontSize(10);
-      pdf.text(`Hotel: ${item.name}`, 24, y); y+=5;
-      pdf.text(`Stars: ${item.stars}`, 24, y); y+=5;
-      pdf.text(`Distance: ${item.distance} km`, 24, y); y+=5;
-      pdf.text(`Price: ₹${item.price}`, 24, y); y+=8;
-    }
-
-    if(y > 260){ pdf.addPage(); y = 20; }
-  });
-
-  pdf.setFontSize(14);
-  pdf.text(`Grand Total: ₹${total}`, 20, y + 10);
-
-  pdf.save("Nandi_Travel_Itinerary.pdf");
-}
-</script>
-<button onclick="clearDraft()">Clear Draft</button>
-  <script>
-function clearDraft(){
-  if(!confirm("Clear saved itinerary?")) return;
-  localStorage.removeItem("nandiCart");
-  cart = [];
-  renderCart();
-  alert("Draft cleared");
-}
-</script>
-
-<script>
-/* ===============================
-   GLOBAL STATE (SAFE)
-================================ */
-let chatMessages = document.getElementById("chatMessages");
-let chatInput = document.getElementById("chatInput");
-let sendBtn = document.getElementById("sendBtn");
-let plusBtn = document.getElementById("plusBtn");
-let plusMenu = document.getElementById("plusMenu");
-
-/* ===============================
-   CHAT CORE
-================================ */
-function addMessage(text, sender="user"){
+function addMessage(text, cls="bot"){
   const div = document.createElement("div");
-  div.className = sender === "user" ? "chat-user" : "chat-bot";
+  div.className = "message " + cls;
   div.innerText = text;
-  chatMessages.appendChild(div);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+  chat.insertBefore(div, plusMenu);
 }
+
+document.getElementById("sendBtn").onclick = sendMessage;
+chatInput.addEventListener("keydown", e=>{
+  if(e.key==="Enter") sendMessage();
+});
 
 function sendMessage(){
   const text = chatInput.value.trim();
   if(!text) return;
-
-  addMessage(text, "user");
-  chatInput.value = "";
-
-  // Demo AI response (locked simple)
-  setTimeout(() => {
-    addMessage("Got it 👍 Use + to search Flights or Hotels.", "bot");
-  }, 400);
+  addMessage(text,"user");
+  chatInput.value="";
+  addMessage("Use + to search Flights or Hotels.");
 }
 
-/* ===============================
-   EVENT BINDINGS (THIS WAS MISSING)
-================================ */
-
-// Send button
-if(sendBtn){
-  sendBtn.onclick = sendMessage;
-}
-
-// Enter key
-if(chatInput){
-  chatInput.addEventListener("keydown", e => {
-    if(e.key === "Enter"){
-      e.preventDefault();
-      sendMessage();
-    }
-  });
-}
-
-/* ===============================
-   PLUS BUTTON FLOW
-================================ */
-let plusState = 0;
-
-function togglePlus(){
-  plusState++;
-  plusMenu.style.display = "block";
-
-  if(plusState === 1){
-    plusMenu.innerHTML = `
-      <button onclick="openFlights()">✈ Flights</button>
-      <button onclick="openHotels()">🏨 Hotels</button>
-    `;
-  }
-
-  if(plusState > 1) plusState = 0;
-}
+document.getElementById("plusBtn").onclick = ()=>{
+  plusMenu.style.display = plusMenu.style.display==="block"?"none":"block";
+};
 
 function openFlights(){
-  document.getElementById("flightsSection").scrollIntoView({behavior:"smooth"});
-  plusMenu.style.display = "none";
+  flights.style.display="block";
+  hotels.style.display="none";
+  plusMenu.style.display="none";
+  loadFlights();
 }
 
 function openHotels(){
-  document.getElementById("hotelsSection").scrollIntoView({behavior:"smooth"});
-  plusMenu.style.display = "none";
+  hotels.style.display="block";
+  flights.style.display="none";
+  plusMenu.style.display="none";
+  loadHotels();
 }
 
-// Attach +
-if(plusBtn){
-  plusBtn.onclick = togglePlus;
+function loadFlights(){
+  const f = document.getElementById("flightResults");
+  f.innerHTML="";
+  ["Air India","IndiGo","Vistara","Akasa","SpiceJet","British Airways"].forEach(a=>{
+    f.innerHTML += `<div class="card">${a} – ₹25,000 <button onclick="addToCart('Flight: ${a}')">Add</button></div>`;
+  });
 }
 
-/* ===============================
-   SAFETY LOG
-================================ */
-console.log("✅ Chat + Plus button wired successfully");
+function loadHotels(){
+  const h = document.getElementById("hotelResults");
+  h.innerHTML="";
+  ["Taj","ITC","Marriott","Hyatt","Hilton","Novotel"].forEach(a=>{
+    h.innerHTML += `<div class="card">${a} – ₹6,000 <button onclick="addToCart('Hotel: ${a}')">Add</button></div>`;
+  });
+}
+
+function addToCart(item){
+  cart.push(item);
+  renderCart();
+}
+
+function renderCart(){
+  cartDiv.innerHTML = cart.map(i=>`• ${i}`).join("<br>");
+}
+
+function saveDraft(){
+  localStorage.setItem("nandiDraft", JSON.stringify(cart));
+  alert("Draft saved");
+}
+
+function loadDraft(){
+  const d = localStorage.getItem("nandiDraft");
+  if(d){ cart = JSON.parse(d); renderCart(); }
+}
+
+function clearDraft(){
+  cart=[]; renderCart(); localStorage.removeItem("nandiDraft");
+}
+
+function exportPDF(){
+  const w = window.open("");
+  w.document.write("<h1>Nandi Travel AI – Itinerary</h1>");
+  cart.forEach(i=>w.document.write("<p>"+i+"</p>"));
+  w.document.write("<p>GST Included</p>");
+  w.print();
+}
 </script>
 
-<div id="chatMessages"></div>
-<input id="chatInput" />
-<button id="sendBtn">Send</button>
-
-<button id="plusBtn">+</button>
-<div id="plusMenu"></div>
-
-<section id="flightsSection"></section>
-<section id="hotelsSection"></section>
-
+</body>
+</html>
