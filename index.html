@@ -173,24 +173,16 @@ input, select {
 <button class="plus" onclick="plusClick()">+</button>
 
 <script>
-let clickCount=0;
-let fare="public";
+let toggle = "flights";
 
-const prices={
- public:{base:28400,gst:1420},
- corporate:{base:26200,gst:1310}
-};
-
-function plusClick(){
- clickCount++;
- setTimeout(()=>{
-  if(clickCount===1){
+function plusClick() {
+  if (toggle === "flights") {
     showSection("flights");
-  } else if(clickCount===2){
+    toggle = "hotels";
+  } else {
     showSection("hotels");
+    toggle = "flights";
   }
-  clickCount=0;
- },300);
 }
 
 function showSection(id){
@@ -247,3 +239,4 @@ function loadDraft(){
 
 </body>
 </html>
+
