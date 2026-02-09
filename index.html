@@ -1,72 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>Nandi Travel AI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 body {
-  margin: 0;
-  background: #0b1020;
-  color: #fff;
-  font-family: Arial, sans-serif;
+  margin:0;
+  background:#0b1020;
+  color:#fff;
+  font-family:system-ui;
 }
 header {
-  padding: 16px;
-  font-weight: bold;
+  padding:14px 20px;
+  font-weight:600;
 }
-#chat {
-  max-width: 900px;
-  margin: auto;
-  padding-bottom: 120px;
+#chatArea {
+  max-width:900px;
+  margin:auto;
+  padding:20px;
+  padding-bottom:140px;
 }
-.message {
-  margin: 10px 0;
-}
-.user { text-align: right; }
-.bot { opacity: 0.85; }
+.msg { margin:12px 0; }
+.user { text-align:right; }
+.bot { opacity:.9; line-height:1.5; }
 
 #inputBar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #0b1020;
-  padding: 10px;
-  display: flex;
-  gap: 6px;
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  background:#0b1020;
+  padding:10px;
+  display:flex;
+  gap:6px;
 }
-#chatInput {
-  flex: 1;
-  padding: 10px;
+#chatInput { flex:1; padding:10px; }
+
+button { cursor:pointer; padding:8px 12px; }
+
+#toolMenu {
+  display:none;
+  margin:15px 0;
 }
-button {
-  padding: 10px;
-  cursor: pointer;
+#toolMenu button {
+  margin-right:8px;
 }
-#plusMenu {
-  display: none;
-  background: #111;
-  padding: 10px;
-  margin: 10px 0;
+
+.panel {
+  display:none;
+  background:#111;
+  padding:15px;
+  margin:15px 0;
 }
-.section {
-  display: none;
-  background: #111;
-  padding: 15px;
-  margin-top: 10px;
-}
+
 .card {
-  background: #fff;
-  color: #000;
-  padding: 10px;
-  margin: 8px 0;
+  background:#fff;
+  color:#000;
+  padding:10px;
+  margin:10px 0;
 }
-#itinerary {
-  background: #111;
-  padding: 15px;
-  margin-top: 15px;
+
+#cart {
+  background:#111;
+  padding:15px;
+  margin-top:20px;
 }
 </style>
 </head>
@@ -75,129 +74,166 @@ button {
 
 <header>✈ Nandi Travel AI</header>
 
-<div id="chat">
-  <div class="message bot">Hi 👋 How can I help you today?</div>
+<div id="chatArea">
+  <div class="msg bot">
+    Hi 👋 I’m your travel assistant.  
+    You can chat naturally, or click **+** to search flights and hotels.
+  </div>
 
-  <div id="plusMenu">
+  <div id="toolMenu">
     <button onclick="openFlights()">✈ Flights</button>
     <button onclick="openHotels()">🏨 Hotels</button>
   </div>
 
-  <div id="flights" class="section">
-    <h3>Flights</h3>
+  <!-- FLIGHT SEARCH -->
+  <div id="flightPanel" class="panel">
+    <h3>Search Flights</h3>
+    <input placeholder="From city"><br><br>
+    <input placeholder="To city"><br><br>
+    <select>
+      <option>Economy</option>
+      <option>Business</option>
+      <option>First</option>
+    </select>
+    <br><br>
+    <button onclick="showFlights()">Search Flights</button>
     <div id="flightResults"></div>
   </div>
 
-  <div id="hotels" class="section">
-    <h3>Hotels</h3>
+  <!-- HOTEL SEARCH -->
+  <div id="hotelPanel" class="panel">
+    <h3>Search Hotels</h3>
+    <input placeholder="City"><br><br>
+    <select>
+      <option>3 Star</option>
+      <option>4 Star</option>
+      <option>5 Star</option>
+    </select>
+    <br><br>
+    <button onclick="showHotels()">Search Hotels</button>
     <div id="hotelResults"></div>
   </div>
 
-  <div id="itinerary">
-    <h3>📋 Itinerary</h3>
-    <div id="cart"></div>
+  <!-- CART -->
+  <div id="cart">
+    <h3>🛒 Itinerary</h3>
+    <div id="cartItems">No items added</div><br>
     <button onclick="saveDraft()">Save Draft</button>
     <button onclick="loadDraft()">Load Draft</button>
-    <button onclick="clearDraft()">Clear Draft</button>
     <button onclick="exportPDF()">Export PDF</button>
   </div>
 </div>
 
 <div id="inputBar">
   <button id="plusBtn">+</button>
-  <input id="chatInput" placeholder="Type a message..." />
-  <button id="sendBtn">Send</button>
+  <input id="chatInput" placeholder="Type your message…">
+  <button onclick="sendMsg()">Send</button>
 </div>
 
 <script>
-const chat = document.getElementById("chat");
-const chatInput = document.getElementById("chatInput");
-const plusMenu = document.getElementById("plusMenu");
-const flights = document.getElementById("flights");
-const hotels = document.getElementById("hotels");
-const cartDiv = document.getElementById("cart");
-
+const chatArea = document.getElementById("chatArea");
+const toolMenu = document.getElementById("toolMenu");
+const flightPanel = document.getElementById("flightPanel");
+const hotelPanel = document.getElementById("hotelPanel");
+const cartItems = document.getElementById("cartItems");
 let cart = [];
 
-function addMessage(text, cls="bot"){
-  const div = document.createElement("div");
-  div.className = "message " + cls;
-  div.innerText = text;
-  chat.insertBefore(div, plusMenu);
+function botReply(text){
+  const d=document.createElement("div");
+  d.className="msg bot";
+  d.innerText=text;
+  chatArea.insertBefore(d, toolMenu);
 }
 
-document.getElementById("sendBtn").onclick = sendMessage;
-chatInput.addEventListener("keydown", e=>{
-  if(e.key==="Enter") sendMessage();
-});
-
-function sendMessage(){
-  const text = chatInput.value.trim();
-  if(!text) return;
-  addMessage(text,"user");
-  chatInput.value="";
-  addMessage("Use + to search Flights or Hotels.");
+function userMsg(text){
+  const d=document.createElement("div");
+  d.className="msg user";
+  d.innerText=text;
+  chatArea.insertBefore(d, toolMenu);
 }
 
-document.getElementById("plusBtn").onclick = ()=>{
-  plusMenu.style.display = plusMenu.style.display==="block"?"none":"block";
+function sendMsg(){
+  const i=document.getElementById("chatInput");
+  if(!i.value) return;
+  userMsg(i.value);
+  botReply(
+    "Got it 👍\n\n" +
+    "You can:\n" +
+    "• Click + to search Flights or Hotels\n" +
+    "• Add results to your itinerary\n" +
+    "• Export everything as PDF\n\n" +
+    "Tell me what you’d like to do next."
+  );
+  i.value="";
+}
+
+document.getElementById("plusBtn").onclick=()=>{
+  toolMenu.style.display = toolMenu.style.display==="block"?"none":"block";
 };
 
 function openFlights(){
-  flights.style.display="block";
-  hotels.style.display="none";
-  plusMenu.style.display="none";
-  loadFlights();
+  toolMenu.style.display="none";
+  flightPanel.style.display="block";
+  hotelPanel.style.display="none";
+  botReply("Let’s search flights ✈ Please fill the details and click Search.");
 }
 
 function openHotels(){
-  hotels.style.display="block";
-  flights.style.display="none";
-  plusMenu.style.display="none";
-  loadHotels();
+  toolMenu.style.display="none";
+  hotelPanel.style.display="block";
+  flightPanel.style.display="none";
+  botReply("Sure! Let’s find hotels 🏨");
 }
 
-function loadFlights(){
-  const f = document.getElementById("flightResults");
-  f.innerHTML="";
-  ["Air India","IndiGo","Vistara","Akasa","SpiceJet","British Airways"].forEach(a=>{
-    f.innerHTML += `<div class="card">${a} – ₹25,000 <button onclick="addToCart('Flight: ${a}')">Add</button></div>`;
+function showFlights(){
+  const r=document.getElementById("flightResults");
+  r.innerHTML="";
+  ["Air India","IndiGo","Vistara","Akasa","British Airways","Lufthansa"]
+  .forEach(a=>{
+    r.innerHTML+=`
+      <div class="card">
+        ${a} – ₹25,000 (GST incl)
+        <button onclick="addCart('Flight: ${a}')">Add</button>
+      </div>`;
   });
 }
 
-function loadHotels(){
-  const h = document.getElementById("hotelResults");
-  h.innerHTML="";
-  ["Taj","ITC","Marriott","Hyatt","Hilton","Novotel"].forEach(a=>{
-    h.innerHTML += `<div class="card">${a} – ₹6,000 <button onclick="addToCart('Hotel: ${a}')">Add</button></div>`;
+function showHotels(){
+  const r=document.getElementById("hotelResults");
+  r.innerHTML="";
+  ["Taj","ITC","Marriott","Hyatt","Hilton","Novotel"]
+  .forEach(h=>{
+    r.innerHTML+=`
+      <div class="card">
+        ${h} – ₹6,000 / night
+        <button onclick="addCart('Hotel: ${h}')">Add</button>
+      </div>`;
   });
 }
 
-function addToCart(item){
+function addCart(item){
   cart.push(item);
   renderCart();
 }
 
 function renderCart(){
-  cartDiv.innerHTML = cart.map(i=>`• ${i}`).join("<br>");
+  cartItems.innerHTML = cart.length
+    ? cart.map(i=>"• "+i).join("<br>")
+    : "No items added";
 }
 
 function saveDraft(){
-  localStorage.setItem("nandiDraft", JSON.stringify(cart));
-  alert("Draft saved");
+  localStorage.setItem("nandiDraft",JSON.stringify(cart));
+  botReply("✅ Draft saved.");
 }
 
 function loadDraft(){
-  const d = localStorage.getItem("nandiDraft");
-  if(d){ cart = JSON.parse(d); renderCart(); }
-}
-
-function clearDraft(){
-  cart=[]; renderCart(); localStorage.removeItem("nandiDraft");
+  const d=localStorage.getItem("nandiDraft");
+  if(d){ cart=JSON.parse(d); renderCart(); }
 }
 
 function exportPDF(){
-  const w = window.open("");
+  const w=window.open("");
   w.document.write("<h1>Nandi Travel AI – Itinerary</h1>");
   cart.forEach(i=>w.document.write("<p>"+i+"</p>"));
   w.document.write("<p>GST Included</p>");
