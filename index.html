@@ -2,56 +2,50 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Nandi Travel AI</title>
+<title>Nandi’s Travel AI (Demo)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <style>
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont;
-  background: linear-gradient(135deg, #0b1020, #020617);
+  font-family: system-ui;
+  background: #0b1020;
   color: #e5e7eb;
 }
 
 header {
+  padding: 14px;
   text-align: center;
-  padding: 16px;
   font-size: 20px;
   font-weight: 600;
+  background: #020617;
 }
 
 #chat {
-  max-width: 900px;
-  margin: auto;
   padding: 16px;
-  min-height: 60vh;
+  min-height: 40vh;
+}
+
+.bot, .user {
+  max-width: 85%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  margin-bottom: 12px;
 }
 
 .bot {
   background: #111827;
-  padding: 12px 14px;
-  border-radius: 12px;
-  margin-bottom: 12px;
-  width: fit-content;
-  max-width: 80%;
 }
 
 .user {
   background: #2563eb;
-  padding: 12px 14px;
-  border-radius: 12px;
   margin-left: auto;
-  margin-bottom: 12px;
-  width: fit-content;
-  max-width: 80%;
 }
 
-.controls {
-  max-width: 900px;
-  margin: auto;
-  padding: 12px;
+.controls, .input-bar {
   display: flex;
   gap: 8px;
+  padding: 12px;
 }
 
 button {
@@ -63,40 +57,46 @@ button {
   cursor: pointer;
 }
 
-input {
-  flex: 1;
+input, select {
   padding: 10px;
   border-radius: 8px;
   border: none;
+  width: 100%;
 }
 
 .form {
-  max-width: 900px;
-  margin: auto;
-  padding: 16px;
   display: none;
+  padding: 12px;
 }
 
-.form input {
-  width: 100%;
-  margin-bottom: 10px;
-}
-
-.suggestions {
+.card {
   background: #020617;
-  border-radius: 6px;
-  margin-top: -6px;
-  margin-bottom: 10px;
-  overflow: hidden;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 12px;
 }
 
-.suggestions div {
-  padding: 8px 10px;
-  cursor: pointer;
+.card h4 {
+  margin: 0 0 6px;
 }
 
-.suggestions div:hover {
-  background: #1e293b;
+.price {
+  font-size: 18px;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px,1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Mobile polish */
+@media (max-width: 600px) {
+  .bot, .user { max-width: 95%; }
 }
 </style>
 </head>
@@ -106,45 +106,61 @@ input {
 <header>Nandi’s Travel AI (Demo)</header>
 
 <div id="chat">
-  <div class="bot">Hi there 👋 How can I help you?</div>
+  <div class="bot">Hi there 👋 Use + to search flights or hotels.</div>
 </div>
 
 <div class="controls">
-  <button onclick="openFlights()">Flights</button>
-  <button onclick="openHotels()">Hotels</button>
+  <button onclick="openFlights()">✈ Flights</button>
+  <button onclick="openHotels()">🏨 Hotels</button>
 </div>
 
-<!-- FLIGHTS FORM -->
+<!-- FLIGHTS -->
 <div id="flightsForm" class="form">
-  <input placeholder="From city" oninput="searchCity(this, 'fromSug')" />
-  <div id="fromSug" class="suggestions"></div>
-
-  <input placeholder="To city" oninput="searchCity(this, 'toSug')" />
-  <div id="toSug" class="suggestions"></div>
-
+  <input placeholder="From city" />
+  <input placeholder="To city" />
   <input type="date" />
+
+  <div class="filters">
+    <select id="flightStops">
+      <option value="">Any stops</option>
+      <option>Non-stop</option>
+      <option>1 Stop</option>
+    </select>
+
+    <input id="flightPrice" type="number" placeholder="Max price" />
+  </div>
+
   <button onclick="searchFlights()">Search Flights</button>
 </div>
 
-<!-- HOTELS FORM -->
+<!-- HOTELS -->
 <div id="hotelsForm" class="form">
-  <input placeholder="City" oninput="searchCity(this, 'hotelSug')" />
-  <div id="hotelSug" class="suggestions"></div>
+  <input placeholder="City" />
+  <input type="date" />
+  <input type="date" />
 
-  <input type="date" />
-  <input type="date" />
+  <div class="filters">
+    <select id="hotelStars">
+      <option value="">Any stars</option>
+      <option value="3">3★</option>
+      <option value="4">4★</option>
+      <option value="5">5★</option>
+    </select>
+
+    <input id="hotelPrice" type="number" placeholder="Max / night" />
+  </div>
+
   <button onclick="searchHotels()">Search Hotels</button>
 </div>
 
-<!-- CHAT INPUT -->
-<div class="controls">
-  <input id="msg" placeholder="Type a message..." onkeydown="enterSend(event)" />
+<div class="input-bar">
+  <input id="msg" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendMsg()" />
   <button onclick="sendMsg()">Send</button>
 </div>
 
 <script>
-function addBot(text) {
-  chat.innerHTML += `<div class="bot">${text}</div>`;
+function addBot(html) {
+  chat.innerHTML += `<div class="bot">${html}</div>`;
   chat.scrollTop = chat.scrollHeight;
 }
 
@@ -166,48 +182,57 @@ function openHotels() {
 }
 
 function sendMsg() {
-  const t = msg.value.trim();
-  if (!t) return;
-  addUser(t);
+  if (!msg.value) return;
+  addUser(msg.value);
   msg.value = "";
 }
 
-function enterSend(e) {
-  if (e.key === "Enter") sendMsg();
-}
+/* Demo data */
+const flights = [
+  {airline:"Air India", route:"BLR → LHR", stops:"Non-stop", price:28400},
+  {airline:"British Airways", route:"BLR → LHR", stops:"1 Stop", price:31800},
+  {airline:"Lufthansa", route:"BLR → LHR", stops:"1 Stop", price:34600}
+];
 
-/* 🔍 OpenStreetMap Autocomplete */
-async function searchCity(input, boxId) {
-  const q = input.value.trim();
-  if (q.length < 3) {
-    document.getElementById(boxId).innerHTML = "";
-    return;
-  }
-
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=5`;
-  const res = await fetch(url);
-  const data = await res.json();
-
-  const box = document.getElementById(boxId);
-  box.innerHTML = "";
-
-  data.forEach(place => {
-    const div = document.createElement("div");
-    div.textContent = place.display_name;
-    div.onclick = () => {
-      input.value = place.display_name;
-      box.innerHTML = "";
-    };
-    box.appendChild(div);
-  });
-}
+const hotels = [
+  {name:"The Ritz London", stars:5, price:42000},
+  {name:"Park Plaza Westminster", stars:4, price:18500},
+  {name:"Premier Inn City", stars:3, price:9200}
+];
 
 function searchFlights() {
-  addBot("Fetching flight options… (demo)");
+  const max = flightPrice.value;
+  const stop = flightStops.value;
+
+  flights
+    .filter(f => (!max || f.price <= max) && (!stop || f.stops === stop))
+    .forEach(f => {
+      addBot(`
+        <div class="card">
+          <h4>${f.airline}</h4>
+          ${f.route}<br>
+          ${f.stops}<br>
+          <div class="price">₹${f.price}</div>
+        </div>
+      `);
+    });
 }
 
 function searchHotels() {
-  addBot("Fetching hotel options… (demo)");
+  const max = hotelPrice.value;
+  const stars = hotelStars.value;
+
+  hotels
+    .filter(h => (!max || h.price <= max) && (!stars || h.stars == stars))
+    .forEach(h => {
+      addBot(`
+        <div class="card">
+          <h4>${h.name}</h4>
+          ⭐ ${h.stars}<br>
+          <div class="price">₹${h.price} / night</div>
+        </div>
+      `);
+    });
 }
 </script>
 
