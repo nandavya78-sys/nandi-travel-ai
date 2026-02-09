@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>Nandi Travel AI</title>
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
 body {
@@ -15,23 +13,22 @@ body {
 }
 
 .header {
-  padding: 16px;
-  font-size: 20px;
-  font-weight: bold;
-  background: #020617;
+  padding: 14px;
   text-align: center;
+  font-size: 20px;
+  background: #020617;
 }
 
 .chat {
-  padding: 20px;
-  height: calc(100vh - 140px);
+  padding: 16px;
+  height: calc(100vh - 170px);
   overflow-y: auto;
 }
 
 .msg {
-  max-width: 70%;
-  margin-bottom: 14px;
-  padding: 12px;
+  max-width: 75%;
+  margin-bottom: 12px;
+  padding: 10px 14px;
   border-radius: 10px;
 }
 
@@ -41,12 +38,12 @@ body {
 .input-bar {
   display: flex;
   gap: 8px;
-  padding: 12px;
+  padding: 10px;
   background: #020617;
 }
 
-input, button, select {
-  padding: 10px;
+input, select, button {
+  padding: 8px;
   border-radius: 6px;
   border: none;
 }
@@ -62,8 +59,19 @@ button {
 .mode-panel {
   display: none;
   background: #020617;
-  padding: 12px;
-  gap: 8px;
+  padding: 10px;
+  gap: 6px;
+}
+
+.card {
+  background: #020617;
+  padding: 10px;
+  border-radius: 8px;
+  margin-top: 6px;
+}
+
+@media (max-width: 600px) {
+  .msg { max-width: 90%; }
 }
 </style>
 </head>
@@ -76,9 +84,10 @@ button {
   <div class="msg bot">Hi there! How can I help you today?</div>
 </div>
 
+<!-- MODE PANEL -->
 <div class="mode-panel" id="modePanel">
-  <button onclick="loadFlights()">Flights</button>
-  <button onclick="loadHotels()">Hotels</button>
+  <button onclick="startFlights()">Flights</button>
+  <button onclick="startHotels()">Hotels</button>
 </div>
 
 <div class="input-bar">
@@ -88,10 +97,15 @@ button {
 </div>
 
 <script>
-function addMsg(text, cls) {
+let mode = null;
+
+const chat = document.getElementById("chat");
+const text = document.getElementById("text");
+
+function addMsg(html, cls="bot") {
   const d = document.createElement("div");
   d.className = "msg " + cls;
-  d.innerText = text;
+  d.innerHTML = html;
   chat.appendChild(d);
   chat.scrollTop = chat.scrollHeight;
 }
@@ -102,38 +116,93 @@ function togglePanel() {
 }
 
 function send() {
-  const t = text.value;
-  if (!t) return;
-  addMsg(t, "user");
-  text.value = "";
-
+  if (!text.value) return;
+  addMsg(text.value, "user");
   fetch("/chat", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({message: t})
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ message: text.value })
   })
-  .then(r => r.json())
-  .then(d => addMsg(d.reply, "bot"));
+  .then(r=>r.json())
+  .then(d=>addMsg(d.reply));
+  text.value="";
 }
 
-function loadFlights() {
-  fetch("/flight", {method:"POST"})
-    .then(r => r.json())
-    .then(d => {
-      d.forEach(f =>
-        addMsg(`✈️ ${f.airline} | ${f.route} | ${f.stops} | ${f.price}`, "bot")
-      );
-    });
+/* ENTER KEY FIX */
+text.addEventListener("keydown", e => {
+  if (e.key === "Enter") send();
+});
+
+/* ---------- FLIGHTS FLOW ---------- */
+function startFlights() {
+  mode = "flight";
+  addMsg(`
+    ✈️ <b>Flight search</b><br><br>
+    From: <input id="fFrom"><br><br>
+    To: <input id="fTo"><br><br>
+    Depart: <input type="date" id="fDepart"><br><br>
+    Return: <input type="date" id="fReturn"><br><br>
+    Stops:
+    <select id="fStops">
+      <option>Any</option>
+      <option>Non-stop</option>
+      <option>1 Stop</option>
+    </select><br><br>
+    <button onclick="searchFlights()">Search Flights</button>
+  `);
 }
 
-function loadHotels() {
-  fetch("/hotel", {method:"POST"})
-    .then(r => r.json())
-    .then(d => {
-      d.forEach(h =>
-        addMsg(`🏨 ${h.name} (${h.stars}⭐) – ${h.price}`, "bot")
-      );
+/* ---------- HOTELS FLOW ---------- */
+function startHotels() {
+  mode = "hotel";
+  addMsg(`
+    🏨 <b>Hotel search</b><br><br>
+    City: <input id="hCity"><br><br>
+    Check-in: <input type="date" id="hIn"><br><br>
+    Check-out: <input type="date" id="hOut"><br><br>
+    Stars:
+    <select id="hStars">
+      <option>Any</option>
+      <option>3</option>
+      <option>4</option>
+      <option>5</option>
+    </select><br><br>
+    <button onclick="searchHotels()">Search Hotels</button>
+  `);
+}
+
+/* ---------- RESULTS ---------- */
+function searchFlights() {
+  fetch("/flight",{method:"POST"})
+  .then(r=>r.json())
+  .then(d=>{
+    d.forEach(f=>{
+      addMsg(`
+        <div class="card">
+          ✈️ <b>${f.airline}</b><br>
+          ${f.route}<br>
+          ${f.stops}<br>
+          <b>${f.price}</b>
+        </div>
+      `);
     });
+  });
+}
+
+function searchHotels() {
+  fetch("/hotel",{method:"POST"})
+  .then(r=>r.json())
+  .then(d=>{
+    d.forEach(h=>{
+      addMsg(`
+        <div class="card">
+          🏨 <b>${h.name}</b><br>
+          ⭐ ${h.stars}<br>
+          <b>${h.price}</b>
+        </div>
+      `);
+    });
+  });
 }
 </script>
 
