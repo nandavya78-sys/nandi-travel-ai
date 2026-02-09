@@ -1,179 +1,236 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>Nandi Travel AI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <style>
-body{margin:0;font-family:system-ui;background:#0b1020;color:#e5e7eb;display:flex;height:100vh}
-.main{flex:1;display:flex;flex-direction:column}
-header{padding:12px;background:#020617;font-weight:600}
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(180deg,#020617,#020617);
+  color: #fff;
+}
 
-.chat-area{flex:1;padding:16px;overflow-y:auto}
-.msg{background:#111827;padding:10px;border-radius:10px;margin-bottom:10px;max-width:70%}
-.bot{align-self:flex-start}
-.user{align-self:flex-end;background:#2563eb}
+header {
+  padding: 12px 20px;
+  background: #020617;
+  border-bottom: 1px solid #1f2937;
+}
 
-.input-bar{display:flex;gap:8px;padding:10px;border-top:1px solid #1e293b}
-input,select{padding:10px;border-radius:10px;border:none;width:100%}
-button{padding:10px 14px;border-radius:10px;border:none;background:#2563eb;color:white;cursor:pointer}
-.plus{background:#020617;border:1px solid #334155}
+.container {
+  display: flex;
+  height: calc(100vh - 50px);
+}
 
-.panel{display:none;background:#020617;padding:12px;border-top:1px solid #1e293b}
-.panel h4{margin:6px 0}
+.main {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
 
-.menu{display:none;gap:10px;padding:10px;background:#020617}
-.menu button{flex:1;background:#1e293b}
+.chat-box {
+  background: #020617;
+  padding: 14px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  border: 1px solid #1f2937;
+}
 
-.filters{display:none;gap:10px;margin:10px 0}
-.toggle{display:flex;gap:6px}
-.toggle button{background:#1e293b}
+input, select, button {
+  height: 38px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+}
 
-.cards{margin-top:10px}
-.card{background:white;color:black;padding:12px;border-radius:12px;margin-bottom:10px}
+button {
+  cursor: pointer;
+}
 
-.support{width:300px;background:#020617;border-left:1px solid #1e293b;display:flex;flex-direction:column}
-.support-header{padding:10px;font-weight:600;cursor:pointer}
-.support-body{flex:1;padding:10px;display:none}
-.support-msg{background:#111827;padding:8px;border-radius:8px;margin-bottom:6px}
-.support-input{display:flex;gap:6px;padding:8px}
+.primary { background:#2563eb;color:#fff; }
+.secondary { background:#1f2937;color:#fff; }
+
+.filters {
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+
+.card {
+  background:#fff;
+  color:#000;
+  border-radius:10px;
+  padding:14px;
+  margin-top:12px;
+}
+
+.support {
+  width: 300px;
+  background:#020617;
+  border-left:1px solid #1f2937;
+  display:flex;
+  flex-direction:column;
+}
+
+.support-header {
+  padding:12px;
+  border-bottom:1px solid #1f2937;
+}
+
+.support-body {
+  flex:1;
+  padding:10px;
+  overflow-y:auto;
+}
+
+.support-input {
+  padding:10px;
+  border-top:1px solid #1f2937;
+}
+
+.city-results div {
+  background:#111827;
+  padding:6px;
+  cursor:pointer;
+}
+.city-results div:hover { background:#1f2937; }
+
+.plus-btn {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 22px;
+}
 </style>
 </head>
 
 <body>
 
+<header>✈️ Nandi Travel AI</header>
+
+<div class="container">
+
 <div class="main">
-<header>✈ Nandi Travel AI</header>
 
-<div class="chat-area" id="chat">
-<div class="msg bot">Hi 👋 How can I help you today?</div>
-</div>
-
-<!-- PLUS MENU -->
-<div class="menu" id="menu">
-<button onclick="openFlights()">Flights</button>
-<button onclick="openHotels()">Hotels</button>
+<div class="chat-box">
+  Hi 👋 How can I help you today?
+  <br><br>
+  <button onclick="setFare('public')">Public Fare</button>
+  <button onclick="setFare('corporate')">Corporate Fare</button>
 </div>
 
 <!-- FLIGHTS -->
-<div class="panel" id="flightPanel">
-<h4>Flights</h4>
-<input placeholder="From city">
+<div id="flights">
+<h3>Flights</h3>
+
+<div class="filters">
+<input id="fromCity" placeholder="From city" oninput="searchCity(this.value)">
+<div id="cityResults" class="city-results"></div>
+
 <input placeholder="To city">
 <input type="date">
 <input type="date">
+
 <select>
 <option>Economy</option>
 <option>Business</option>
 <option>First Class</option>
 </select>
-<button onclick="searchFlights()">Search Flights</button>
+
+<input type="range" min="10000" max="100000" step="1000" oninput="priceLbl.innerText=this.value">
+<span id="priceLbl">50000</span>
+
+<select>
+<option>Non-stop</option>
+<option>1 Stop</option>
+</select>
 </div>
 
-<!-- HOTELS -->
-<div class="panel" id="hotelPanel">
-<h4>Hotels</h4>
-<input placeholder="City">
-<input type="date">
-<input type="date">
-<select>
-<option>Any stars</option>
-<option>3 Star</option>
-<option>4 Star</option>
-<option>5 Star</option>
-</select>
-<select>
-<option>Within 1 mile</option>
-<option>Within 5 miles</option>
-<option>Within 10 miles</option>
-<option>Within 30 miles</option>
-</select>
-<button onclick="searchHotels()">Search Hotels</button>
+<button class="primary" onclick="renderResult()">Search Flights</button>
 </div>
 
-<!-- INPUT -->
-<div class="input-bar">
-<button class="plus" onclick="toggleMenu()">＋</button>
-<input id="input" placeholder="Type a message..." onkeydown="if(event.key==='Enter')send()">
-<button onclick="send()">Send</button>
+<div id="resultCard" class="card"></div>
+
+<div style="margin-top:10px">
+<button onclick="exportPDF()">Export PDF</button>
+<button onclick="saveDraft()">Save Draft</button>
+<button onclick="loadDraft()">Load Draft</button>
 </div>
+
 </div>
 
 <!-- SUPPORT -->
 <div class="support">
-<div class="support-header" onclick="toggleSupport()">💬 Customer Support</div>
-<div class="support-body" id="supportBody">
-<div class="support-msg">Hi 👋 How can I help you?</div>
-</div>
+<div class="support-header">💬 Customer Support</div>
+<div class="support-body">Hi 👋 How can I help you?</div>
 <div class="support-input">
-<input id="supportInput" placeholder="Message…" onkeydown="if(event.key==='Enter')sendSupport()">
-<button onclick="sendSupport()">Send</button>
+<input placeholder="Message...">
+<button class="primary">Send</button>
 </div>
 </div>
+
+</div>
+
+<button class="plus-btn primary" onclick="toggleFlights()">+</button>
 
 <script>
-function send(){
- const t=input.value.trim();
- if(!t)return;
- chat.innerHTML+=`<div class="msg user">${t}</div>`;
- chat.innerHTML+=`<div class="msg bot">Use + to search flights or hotels ✈🏨</div>`;
- input.value="";
+let fareMode="public";
+let fares={
+ public:{base:28400,gst:1420},
+ corporate:{base:26200,gst:1310}
+};
+
+function setFare(m){fareMode=m;renderResult();}
+
+function renderResult(){
+ let f=fares[fareMode];
+ document.getElementById("resultCard").innerHTML=
+ `<b>Air India</b><br>
+ ₹${f.base+f.gst}<br>
+ <small>Base ₹${f.base} + GST ₹${f.gst}</small>`;
 }
 
-function toggleMenu(){
- menu.style.display = menu.style.display==="flex"?"none":"flex";
+async function searchCity(q){
+ if(q.length<3)return;
+ let r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}`);
+ let d=await r.json();
+ cityResults.innerHTML=d.slice(0,5).map(c=>`<div onclick="selectCity('${c.display_name}')">${c.display_name}</div>`).join("");
+}
+function selectCity(v){fromCity.value=v;cityResults.innerHTML="";}
+
+function exportPDF(){
+ const {jsPDF}=window.jspdf;
+ const pdf=new jsPDF();
+ let f=fares[fareMode];
+ pdf.text("Nandi Corporate Travel – Itinerary",20,20);
+ pdf.text(`Fare: ${fareMode}`,20,35);
+ pdf.text(`Base: ₹${f.base}`,20,50);
+ pdf.text(`GST: ₹${f.gst}`,20,60);
+ pdf.text(`Total: ₹${f.base+f.gst}`,20,70);
+ pdf.save("itinerary.pdf");
 }
 
-function openFlights(){
- menu.style.display="none";
- flightPanel.style.display="block";
- hotelPanel.style.display="none";
+function saveDraft(){
+ localStorage.setItem("nandiDraft",fareMode);
+ alert("Draft saved");
+}
+function loadDraft(){
+ let d=localStorage.getItem("nandiDraft");
+ if(d){fareMode=d;renderResult();}
 }
 
-function openHotels(){
- menu.style.display="none";
- hotelPanel.style.display="block";
- flightPanel.style.display="none";
-}
-
-function fareToggle(){
- filters.style.display="flex";
-}
-
-function searchFlights(){
- showResults("flight");
-}
-
-function searchHotels(){
- showResults("hotel");
-}
-
-function showResults(type){
- chat.innerHTML+=`
- <div class="toggle">
- <button>Public Fare</button>
- <button>Corporate Fare</button>
- <button onclick="alert('PDF exported')">Export PDF</button>
- </div>
- <div class="card">
- <b>${type==="flight"?"Air India":"The Ritz London"}</b><br>
- ₹${type==="flight"?"28,400":"42,000"} (GST included)
- </div>`;
- flightPanel.style.display="none";
- hotelPanel.style.display="none";
-}
-
-function toggleSupport(){
- supportBody.style.display = supportBody.style.display==="block"?"none":"block";
-}
-
-function sendSupport(){
- const t=supportInput.value;
- if(!t)return;
- supportBody.innerHTML+=`<div class="support-msg">${t}</div>`;
- supportBody.innerHTML+=`<div class="support-msg">Thanks 👍 Our agent will assist you.</div>`;
- supportInput.value="";
+function toggleFlights(){
+ document.getElementById("flights").scrollIntoView({behavior:"smooth"});
 }
 </script>
 
