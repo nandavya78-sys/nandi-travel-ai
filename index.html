@@ -58,10 +58,7 @@ input, select {
   font-size: 14px;
 }
 
-.form {
-  display: none;
-  padding: 10px;
-}
+.form { display: none; padding: 10px; }
 
 .row {
   display: grid;
@@ -77,28 +74,36 @@ input, select {
   margin-top: 10px;
 }
 
-.card h4 { margin: 0 0 4px; }
-
-.meta {
-  font-size: 13px;
-  color: #475569;
-}
-
-.price {
-  margin-top: 6px;
-  font-weight: 700;
-}
+.meta { font-size: 13px; color: #475569; }
+.price { font-weight: 700; margin-top: 4px; }
 
 .public { color: #0ea5e9; }
 .corporate { color: #16a34a; }
 
-.loading {
-  opacity: 0.7;
-  font-style: italic;
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
 }
 
-@media (max-width:600px) {
-  .bot,.user { max-width:95%; }
+/* Support chat */
+#supportBtn {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  background: #16a34a;
+}
+
+#supportChat {
+  position: fixed;
+  bottom: 70px;
+  right: 16px;
+  width: 260px;
+  background: #020617;
+  border-radius: 12px;
+  padding: 10px;
+  display: none;
 }
 </style>
 </head>
@@ -114,6 +119,11 @@ input, select {
 <div class="controls">
   <button onclick="openFlights()">✈ Flights</button>
   <button onclick="openHotels()">🏨 Hotels</button>
+
+  <div class="toggle">
+    <input type="checkbox" id="corpToggle" onchange="toggleFare()" />
+    Corporate Fare
+  </div>
 </div>
 
 <!-- FLIGHTS -->
@@ -124,24 +134,6 @@ input, select {
     <input type="date" />
     <input type="date" />
   </div>
-
-  <div class="row">
-    <select>
-      <option>Economy</option>
-      <option>Premium Economy</option>
-      <option>Business</option>
-      <option>First</option>
-    </select>
-
-    <select id="flightStops">
-      <option value="">Any stops</option>
-      <option>Non-stop</option>
-      <option>1 Stop</option>
-    </select>
-
-    <input id="flightPrice" type="number" placeholder="Max ₹" />
-  </div>
-
   <button onclick="searchFlights()">Search Flights</button>
 </div>
 
@@ -152,26 +144,6 @@ input, select {
     <input type="date" />
     <input type="date" />
   </div>
-
-  <div class="row">
-    <select id="hotelStars">
-      <option value="">Any ★</option>
-      <option value="3">≤3★</option>
-      <option value="4">4★</option>
-      <option value="5">5★</option>
-    </select>
-
-    <select id="hotelDistance">
-      <option value="">Any distance</option>
-      <option value="5">1–5 mi</option>
-      <option value="10">5–10 mi</option>
-      <option value="20">10–20 mi</option>
-      <option value="30">20–30 mi</option>
-    </select>
-
-    <input id="hotelPrice" type="number" placeholder="Max ₹/night" />
-  </div>
-
   <button onclick="searchHotels()">Search Hotels</button>
 </div>
 
@@ -180,71 +152,86 @@ input, select {
   <button onclick="sendMsg()">Send</button>
 </div>
 
+<!-- Support -->
+<button id="supportBtn" onclick="toggleSupport()">Customer Support</button>
+
+<div id="supportChat">
+  <div class="bot">Support: Hi 👋 How can I assist you?</div>
+  <input id="supportMsg" placeholder="Type here…" onkeydown="if(event.key==='Enter')supportReply()" />
+</div>
+
 <script>
+let corporate = false;
+
 function addBot(html){chat.innerHTML+=`<div class="bot">${html}</div>`;}
 function addUser(t){chat.innerHTML+=`<div class="user">${t}</div>`;}
 
 function openFlights(){
   flightsForm.style.display="block";
   hotelsForm.style.display="none";
-  addBot("Sure ✈️ Enter flight details.");
+  addBot("Please enter flight details ✈️");
 }
 
 function openHotels(){
   hotelsForm.style.display="block";
   flightsForm.style.display="none";
-  addBot("Sure 🏨 Enter hotel details.");
+  addBot("Please enter hotel details 🏨");
 }
 
 function sendMsg(){
   if(!msg.value) return;
-  const t=msg.value.toLowerCase();
-  addUser(msg.value); msg.value="";
-  if(["hi","hello","hey"].includes(t)) addBot("Hello 😊");
-  else addBot("Use Flights or Hotels to search.");
+  addUser(msg.value);
+  addBot("Got it 👍");
+  msg.value="";
 }
 
-/* Demo data with public vs corporate */
-const flights=[
- {airline:"Air India",route:"BLR → LHR",stops:"Non-stop",public:28400,corp:26800},
- {airline:"BA",route:"BLR → LHR",stops:"1 Stop",public:31800,corp:30500}
-];
+function toggleFare(){
+  corporate = corpToggle.checked;
+  addBot(corporate ? "Corporate fares enabled 🟢" : "Public fares enabled 🔵");
+}
 
-const hotels=[
- {name:"Ritz London",stars:5,distance:2,public:42000,corp:39000},
- {name:"Park Plaza",stars:4,distance:6,public:18500,corp:17000}
+/* Demo data */
+const flights=[
+ {airline:"Air India",route:"BLR → LHR",base:26000,gst:1300},
+ {airline:"British Airways",route:"BLR → LHR",base:29000,gst:1450}
 ];
 
 function searchFlights(){
-  addBot("<span class='loading'>Searching flights…</span>");
-  setTimeout(()=>{
-    flights.forEach(f=>{
-      addBot(`
-        <div class="card">
-          <h4>${f.airline}</h4>
-          <div class="meta">${f.route} • ${f.stops}</div>
-          <div class="price public">Public: ₹${f.public}</div>
-          <div class="price corporate">Corporate: ₹${f.corp}</div>
-        </div>
-      `);
-    });
-  },700);
+  flights.forEach(f=>{
+    const total = corporate ? f.base+f.gst : f.base+3000;
+    addBot(`
+      <div class="card">
+        <b>${f.airline}</b>
+        <div class="meta">${f.route}</div>
+        ${corporate ? `
+          <div class="price corporate">Base: ₹${f.base}</div>
+          <div class="meta">GST: ₹${f.gst}</div>
+        ` : ``}
+        <div class="price ${corporate?"corporate":"public"}">Total: ₹${total}</div>
+        <button onclick="exportItinerary('${f.airline}','${total}')">Export Itinerary</button>
+      </div>
+    `);
+  });
 }
 
-function searchHotels(){
-  addBot("<span class='loading'>Finding hotels…</span>");
-  setTimeout(()=>{
-    hotels.forEach(h=>{
-      addBot(`
-        <div class="card">
-          <h4>${h.name}</h4>
-          <div class="meta">${h.stars}★ • ${h.distance} mi</div>
-          <div class="price public">Public: ₹${h.public}</div>
-          <div class="price corporate">Corporate: ₹${h.corp}</div>
-        </div>
-      `);
-    });
-  },700);
+/* Export */
+function exportItinerary(name, price){
+  const text = `Itinerary\n\nAirline: ${name}\nPrice: ₹${price}\nThank you`;
+  const blob = new Blob([text],{type:"text/plain"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "itinerary.txt";
+  a.click();
+}
+
+/* Support */
+function toggleSupport(){
+  supportChat.style.display = supportChat.style.display==="block"?"none":"block";
+}
+
+function supportReply(){
+  supportChat.innerHTML+=`<div class="bot">Support: We’re checking this for you 😊</div>`;
+  supportMsg.value="";
 }
 </script>
 
