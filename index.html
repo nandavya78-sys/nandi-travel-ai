@@ -9,24 +9,33 @@
 body{margin:0;font-family:system-ui;background:#0b1020;color:#e5e7eb;display:flex;height:100vh}
 .main{flex:1;display:flex;flex-direction:column}
 header{padding:12px;background:#020617;font-weight:600}
+
 .chat-area{flex:1;padding:16px;overflow-y:auto}
 .msg{background:#111827;padding:10px;border-radius:10px;margin-bottom:10px;max-width:70%}
 .bot{align-self:flex-start}
 .user{align-self:flex-end;background:#2563eb}
+
 .input-bar{display:flex;gap:8px;padding:10px;border-top:1px solid #1e293b}
-input,select{flex:1;padding:10px;border-radius:10px;border:none}
+input,select{padding:10px;border-radius:10px;border:none;width:100%}
 button{padding:10px 14px;border-radius:10px;border:none;background:#2563eb;color:white;cursor:pointer}
 .plus{background:#020617;border:1px solid #334155}
 
 .panel{display:none;background:#020617;padding:12px;border-top:1px solid #1e293b}
 .panel h4{margin:6px 0}
 
+.menu{display:none;gap:10px;padding:10px;background:#020617}
+.menu button{flex:1;background:#1e293b}
+
+.filters{display:none;gap:10px;margin:10px 0}
+.toggle{display:flex;gap:6px}
+.toggle button{background:#1e293b}
+
 .cards{margin-top:10px}
 .card{background:white;color:black;padding:12px;border-radius:12px;margin-bottom:10px}
 
 .support{width:300px;background:#020617;border-left:1px solid #1e293b;display:flex;flex-direction:column}
-.support-header{padding:10px;font-weight:600}
-.support-body{flex:1;padding:10px}
+.support-header{padding:10px;font-weight:600;cursor:pointer}
+.support-body{flex:1;padding:10px;display:none}
 .support-msg{background:#111827;padding:8px;border-radius:8px;margin-bottom:6px}
 .support-input{display:flex;gap:6px;padding:8px}
 </style>
@@ -35,13 +44,19 @@ button{padding:10px 14px;border-radius:10px;border:none;background:#2563eb;color
 <body>
 
 <div class="main">
-
 <header>✈ Nandi Travel AI</header>
 
 <div class="chat-area" id="chat">
 <div class="msg bot">Hi 👋 How can I help you today?</div>
 </div>
 
+<!-- PLUS MENU -->
+<div class="menu" id="menu">
+<button onclick="openFlights()">Flights</button>
+<button onclick="openHotels()">Hotels</button>
+</div>
+
+<!-- FLIGHTS -->
 <div class="panel" id="flightPanel">
 <h4>Flights</h4>
 <input placeholder="From city">
@@ -53,9 +68,10 @@ button{padding:10px 14px;border-radius:10px;border:none;background:#2563eb;color
 <option>Business</option>
 <option>First Class</option>
 </select>
-<button onclick="showFlights()">Search Flights</button>
+<button onclick="searchFlights()">Search Flights</button>
 </div>
 
+<!-- HOTELS -->
 <div class="panel" id="hotelPanel">
 <h4>Hotels</h4>
 <input placeholder="City">
@@ -67,76 +83,96 @@ button{padding:10px 14px;border-radius:10px;border:none;background:#2563eb;color
 <option>4 Star</option>
 <option>5 Star</option>
 </select>
-<button onclick="showHotels()">Search Hotels</button>
+<select>
+<option>Within 1 mile</option>
+<option>Within 5 miles</option>
+<option>Within 10 miles</option>
+<option>Within 30 miles</option>
+</select>
+<button onclick="searchHotels()">Search Hotels</button>
 </div>
 
+<!-- INPUT -->
 <div class="input-bar">
 <button class="plus" onclick="toggleMenu()">＋</button>
 <input id="input" placeholder="Type a message..." onkeydown="if(event.key==='Enter')send()">
 <button onclick="send()">Send</button>
 </div>
-
 </div>
 
 <!-- SUPPORT -->
 <div class="support">
-<div class="support-header">💬 Customer Support</div>
+<div class="support-header" onclick="toggleSupport()">💬 Customer Support</div>
 <div class="support-body" id="supportBody">
 <div class="support-msg">Hi 👋 How can I help you?</div>
 </div>
 <div class="support-input">
-<input id="supportInput" placeholder="Type message…" onkeydown="if(event.key==='Enter')sendSupport()">
+<input id="supportInput" placeholder="Message…" onkeydown="if(event.key==='Enter')sendSupport()">
 <button onclick="sendSupport()">Send</button>
 </div>
 </div>
 
 <script>
-let menu=0;
-
 function send(){
  const t=input.value.trim();
  if(!t)return;
  chat.innerHTML+=`<div class="msg user">${t}</div>`;
- chat.innerHTML+=`<div class="msg bot">Sure 👍 Use + to search flights or hotels.</div>`;
+ chat.innerHTML+=`<div class="msg bot">Use + to search flights or hotels ✈🏨</div>`;
  input.value="";
- chat.scrollTop=chat.scrollHeight;
 }
 
 function toggleMenu(){
- flightPanel.style.display="none";
- hotelPanel.style.display="none";
- menu=(menu+1)%3;
- if(menu===1)flightPanel.style.display="block";
- if(menu===2)hotelPanel.style.display="block";
+ menu.style.display = menu.style.display==="flex"?"none":"flex";
 }
 
-function showFlights(){
- chat.innerHTML+=`
- <div class="card">
- <b>Air India</b><br>BLR → DEL<br>₹8,200
- </div>
- <div class="card">
- <b>British Airways</b><br>BLR → LHR<br>₹31,800
- </div>`;
+function openFlights(){
+ menu.style.display="none";
+ flightPanel.style.display="block";
+ hotelPanel.style.display="none";
+}
+
+function openHotels(){
+ menu.style.display="none";
+ hotelPanel.style.display="block";
  flightPanel.style.display="none";
 }
 
-function showHotels(){
+function fareToggle(){
+ filters.style.display="flex";
+}
+
+function searchFlights(){
+ showResults("flight");
+}
+
+function searchHotels(){
+ showResults("hotel");
+}
+
+function showResults(type){
  chat.innerHTML+=`
- <div class="card">
- <b>The Ritz London ⭐⭐⭐⭐⭐</b><br>₹42,000/night
+ <div class="toggle">
+ <button>Public Fare</button>
+ <button>Corporate Fare</button>
+ <button onclick="alert('PDF exported')">Export PDF</button>
  </div>
  <div class="card">
- <b>Premier Inn ⭐⭐⭐</b><br>₹9,200/night
+ <b>${type==="flight"?"Air India":"The Ritz London"}</b><br>
+ ₹${type==="flight"?"28,400":"42,000"} (GST included)
  </div>`;
+ flightPanel.style.display="none";
  hotelPanel.style.display="none";
+}
+
+function toggleSupport(){
+ supportBody.style.display = supportBody.style.display==="block"?"none":"block";
 }
 
 function sendSupport(){
  const t=supportInput.value;
  if(!t)return;
  supportBody.innerHTML+=`<div class="support-msg">${t}</div>`;
- supportBody.innerHTML+=`<div class="support-msg">Thanks 👍 Our agent will reply shortly.</div>`;
+ supportBody.innerHTML+=`<div class="support-msg">Thanks 👍 Our agent will assist you.</div>`;
  supportInput.value="";
 }
 </script>
