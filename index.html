@@ -1,208 +1,213 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>Nandi Travel AI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <style>
 body {
   margin: 0;
-  background: #0b1220;
-  font-family: system-ui;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont;
+  background: linear-gradient(135deg, #0b1020, #020617);
   color: #e5e7eb;
 }
 
-.header {
-  padding: 14px;
+header {
   text-align: center;
-  font-size: 20px;
-  background: #020617;
-}
-
-.chat {
   padding: 16px;
-  height: calc(100vh - 170px);
-  overflow-y: auto;
+  font-size: 20px;
+  font-weight: 600;
 }
 
-.msg {
-  max-width: 75%;
+#chat {
+  max-width: 900px;
+  margin: auto;
+  padding: 16px;
+  min-height: 60vh;
+}
+
+.bot {
+  background: #111827;
+  padding: 12px 14px;
+  border-radius: 12px;
   margin-bottom: 12px;
-  padding: 10px 14px;
-  border-radius: 10px;
+  width: fit-content;
+  max-width: 80%;
 }
 
-.bot { background: #1e293b; }
-.user { background: #2563eb; margin-left: auto; }
+.user {
+  background: #2563eb;
+  padding: 12px 14px;
+  border-radius: 12px;
+  margin-left: auto;
+  margin-bottom: 12px;
+  width: fit-content;
+  max-width: 80%;
+}
 
-.input-bar {
+.controls {
+  max-width: 900px;
+  margin: auto;
+  padding: 12px;
   display: flex;
   gap: 8px;
-  padding: 10px;
-  background: #020617;
 }
-
-input, select, button {
-  padding: 8px;
-  border-radius: 6px;
-  border: none;
-}
-
-input { flex: 1; }
 
 button {
   background: #2563eb;
   color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
   cursor: pointer;
 }
 
-.mode-panel {
-  display: none;
-  background: #020617;
-  padding: 10px;
-  gap: 6px;
-}
-
-.card {
-  background: #020617;
+input {
+  flex: 1;
   padding: 10px;
   border-radius: 8px;
-  margin-top: 6px;
+  border: none;
 }
 
-@media (max-width: 600px) {
-  .msg { max-width: 90%; }
+.form {
+  max-width: 900px;
+  margin: auto;
+  padding: 16px;
+  display: none;
+}
+
+.form input {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.suggestions {
+  background: #020617;
+  border-radius: 6px;
+  margin-top: -6px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.suggestions div {
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.suggestions div:hover {
+  background: #1e293b;
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">✈️ Nandi Travel AI</div>
+<header>Nandi’s Travel AI (Demo)</header>
 
-<div class="chat" id="chat">
-  <div class="msg bot">Hi there! How can I help you today?</div>
+<div id="chat">
+  <div class="bot">Hi there 👋 How can I help you?</div>
 </div>
 
-<!-- MODE PANEL -->
-<div class="mode-panel" id="modePanel">
-  <button onclick="startFlights()">Flights</button>
-  <button onclick="startHotels()">Hotels</button>
+<div class="controls">
+  <button onclick="openFlights()">Flights</button>
+  <button onclick="openHotels()">Hotels</button>
 </div>
 
-<div class="input-bar">
-  <button onclick="togglePanel()">+</button>
-  <input id="text" placeholder="Type a message…" />
-  <button onclick="send()">Send</button>
+<!-- FLIGHTS FORM -->
+<div id="flightsForm" class="form">
+  <input placeholder="From city" oninput="searchCity(this, 'fromSug')" />
+  <div id="fromSug" class="suggestions"></div>
+
+  <input placeholder="To city" oninput="searchCity(this, 'toSug')" />
+  <div id="toSug" class="suggestions"></div>
+
+  <input type="date" />
+  <button onclick="searchFlights()">Search Flights</button>
+</div>
+
+<!-- HOTELS FORM -->
+<div id="hotelsForm" class="form">
+  <input placeholder="City" oninput="searchCity(this, 'hotelSug')" />
+  <div id="hotelSug" class="suggestions"></div>
+
+  <input type="date" />
+  <input type="date" />
+  <button onclick="searchHotels()">Search Hotels</button>
+</div>
+
+<!-- CHAT INPUT -->
+<div class="controls">
+  <input id="msg" placeholder="Type a message..." onkeydown="enterSend(event)" />
+  <button onclick="sendMsg()">Send</button>
 </div>
 
 <script>
-let mode = null;
-
-const chat = document.getElementById("chat");
-const text = document.getElementById("text");
-
-function addMsg(html, cls="bot") {
-  const d = document.createElement("div");
-  d.className = "msg " + cls;
-  d.innerHTML = html;
-  chat.appendChild(d);
+function addBot(text) {
+  chat.innerHTML += `<div class="bot">${text}</div>`;
   chat.scrollTop = chat.scrollHeight;
 }
 
-function togglePanel() {
-  const p = document.getElementById("modePanel");
-  p.style.display = p.style.display === "flex" ? "none" : "flex";
+function addUser(text) {
+  chat.innerHTML += `<div class="user">${text}</div>`;
+  chat.scrollTop = chat.scrollHeight;
 }
 
-function send() {
-  if (!text.value) return;
-  addMsg(text.value, "user");
-  fetch("/chat", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ message: text.value })
-  })
-  .then(r=>r.json())
-  .then(d=>addMsg(d.reply));
-  text.value="";
+function openFlights() {
+  flightsForm.style.display = "block";
+  hotelsForm.style.display = "none";
+  addBot("Please enter flight details ✈️");
 }
 
-/* ENTER KEY FIX */
-text.addEventListener("keydown", e => {
-  if (e.key === "Enter") send();
-});
-
-/* ---------- FLIGHTS FLOW ---------- */
-function startFlights() {
-  mode = "flight";
-  addMsg(`
-    ✈️ <b>Flight search</b><br><br>
-    From: <input id="fFrom"><br><br>
-    To: <input id="fTo"><br><br>
-    Depart: <input type="date" id="fDepart"><br><br>
-    Return: <input type="date" id="fReturn"><br><br>
-    Stops:
-    <select id="fStops">
-      <option>Any</option>
-      <option>Non-stop</option>
-      <option>1 Stop</option>
-    </select><br><br>
-    <button onclick="searchFlights()">Search Flights</button>
-  `);
+function openHotels() {
+  hotelsForm.style.display = "block";
+  flightsForm.style.display = "none";
+  addBot("Please enter hotel details 🏨");
 }
 
-/* ---------- HOTELS FLOW ---------- */
-function startHotels() {
-  mode = "hotel";
-  addMsg(`
-    🏨 <b>Hotel search</b><br><br>
-    City: <input id="hCity"><br><br>
-    Check-in: <input type="date" id="hIn"><br><br>
-    Check-out: <input type="date" id="hOut"><br><br>
-    Stars:
-    <select id="hStars">
-      <option>Any</option>
-      <option>3</option>
-      <option>4</option>
-      <option>5</option>
-    </select><br><br>
-    <button onclick="searchHotels()">Search Hotels</button>
-  `);
+function sendMsg() {
+  const t = msg.value.trim();
+  if (!t) return;
+  addUser(t);
+  msg.value = "";
 }
 
-/* ---------- RESULTS ---------- */
-function searchFlights() {
-  fetch("/flight",{method:"POST"})
-  .then(r=>r.json())
-  .then(d=>{
-    d.forEach(f=>{
-      addMsg(`
-        <div class="card">
-          ✈️ <b>${f.airline}</b><br>
-          ${f.route}<br>
-          ${f.stops}<br>
-          <b>${f.price}</b>
-        </div>
-      `);
-    });
+function enterSend(e) {
+  if (e.key === "Enter") sendMsg();
+}
+
+/* 🔍 OpenStreetMap Autocomplete */
+async function searchCity(input, boxId) {
+  const q = input.value.trim();
+  if (q.length < 3) {
+    document.getElementById(boxId).innerHTML = "";
+    return;
+  }
+
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&addressdetails=1&limit=5`;
+  const res = await fetch(url);
+  const data = await res.json();
+
+  const box = document.getElementById(boxId);
+  box.innerHTML = "";
+
+  data.forEach(place => {
+    const div = document.createElement("div");
+    div.textContent = place.display_name;
+    div.onclick = () => {
+      input.value = place.display_name;
+      box.innerHTML = "";
+    };
+    box.appendChild(div);
   });
+}
+
+function searchFlights() {
+  addBot("Fetching flight options… (demo)");
 }
 
 function searchHotels() {
-  fetch("/hotel",{method:"POST"})
-  .then(r=>r.json())
-  .then(d=>{
-    d.forEach(h=>{
-      addMsg(`
-        <div class="card">
-          🏨 <b>${h.name}</b><br>
-          ⭐ ${h.stars}<br>
-          <b>${h.price}</b>
-        </div>
-      `);
-    });
-  });
+  addBot("Fetching hotel options… (demo)");
 }
 </script>
 
