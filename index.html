@@ -201,18 +201,59 @@ function loadDraft(){
 }
 loadDraft();
 
+<script>
 function exportPDF(){
- const {jsPDF}=window.jspdf;
- const pdf=new jsPDF();
- pdf.text("Nandi Travel AI – Itinerary",20,20);
- let y=40;
- cart.forEach(i=>{
-  pdf.text(`${i.type.toUpperCase()}: ${i.airline||i.name}`,20,y);
-  y+=10;
- });
- pdf.save("itinerary.pdf");
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF();
+
+  let y = 20;
+  let total = 0;
+
+  pdf.setFontSize(16);
+  pdf.text("Nandi Travel AI – Itinerary", 20, y);
+  y += 10;
+
+  pdf.setFontSize(10);
+  pdf.text(`Generated on: ${new Date().toLocaleString()}`, 20, y);
+  y += 10;
+
+  pdf.setFontSize(12);
+
+  cart.forEach((item, idx) => {
+    pdf.text(`${idx + 1}. ${item.type.toUpperCase()}`, 20, y);
+    y += 6;
+
+    if(item.type === "flight"){
+      const base = item[fareMode] || 0;
+      const gst = item.gst || 0;
+      const sum = base + gst;
+      total += sum;
+
+      pdf.setFontSize(10);
+      pdf.text(`Airline: ${item.airline}`, 24, y); y+=5;
+      pdf.text(`Route: ${item.route}`, 24, y); y+=5;
+      pdf.text(`Stops: ${item.stops}`, 24, y); y+=5;
+      pdf.text(`Fare (${fareMode}): ₹${base}`, 24, y); y+=5;
+      pdf.text(`GST: ₹${gst}`, 24, y); y+=5;
+      pdf.text(`Total: ₹${sum}`, 24, y); y+=8;
+    }
+
+    if(item.type === "hotel"){
+      total += item.price || 0;
+
+      pdf.setFontSize(10);
+      pdf.text(`Hotel: ${item.name}`, 24, y); y+=5;
+      pdf.text(`Stars: ${item.stars}`, 24, y); y+=5;
+      pdf.text(`Distance: ${item.distance} km`, 24, y); y+=5;
+      pdf.text(`Price: ₹${item.price}`, 24, y); y+=8;
+    }
+
+    if(y > 260){ pdf.addPage(); y = 20; }
+  });
+
+  pdf.setFontSize(14);
+  pdf.text(`Grand Total: ₹${total}`, 20, y + 10);
+
+  pdf.save("Nandi_Travel_Itinerary.pdf");
 }
 </script>
-
-</body>
-</html>
