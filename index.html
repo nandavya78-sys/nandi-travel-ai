@@ -1,115 +1,110 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>Nandi Travel AI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- jsPDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
 body {
-  margin: 0;
+  margin:0;
   font-family: Arial, sans-serif;
-  background: linear-gradient(180deg,#020617,#020617);
-  color: #fff;
+  background:#020617;
+  color:white;
 }
 
 header {
-  padding: 12px 20px;
-  background: #020617;
-  border-bottom: 1px solid #1f2937;
-}
-
-.container {
-  display: flex;
-  height: calc(100vh - 50px);
-}
-
-.main {
-  flex: 1;
-  padding: 16px;
-  overflow-y: auto;
-}
-
-.chat-box {
-  background: #020617;
-  padding: 14px;
-  border-radius: 10px;
-  margin-bottom: 12px;
-  border: 1px solid #1f2937;
-}
-
-input, select, button {
-  height: 38px;
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: none;
-  font-size: 14px;
-}
-
-button {
-  cursor: pointer;
-}
-
-.primary { background:#2563eb;color:#fff; }
-.secondary { background:#1f2937;color:#fff; }
-
-.filters {
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  margin-top:10px;
-}
-
-.card {
-  background:#fff;
-  color:#000;
-  border-radius:10px;
-  padding:14px;
-  margin-top:12px;
-}
-
-.support {
-  width: 300px;
-  background:#020617;
-  border-left:1px solid #1f2937;
-  display:flex;
-  flex-direction:column;
-}
-
-.support-header {
-  padding:12px;
+  padding:12px 20px;
   border-bottom:1px solid #1f2937;
 }
 
-.support-body {
+.main {
+  padding:16px;
+  max-width:900px;
+  margin:auto;
+}
+
+.chat {
+  border:1px solid #1f2937;
+  border-radius:10px;
+  padding:12px;
+  margin-bottom:16px;
+}
+
+.chat-log {
+  min-height:120px;
+  margin-bottom:10px;
+}
+
+.chat-input {
+  display:flex;
+  gap:8px;
+}
+
+.chat-input input {
   flex:1;
   padding:10px;
-  overflow-y:auto;
+  border-radius:6px;
+  border:none;
 }
 
-.support-input {
-  padding:10px;
-  border-top:1px solid #1f2937;
+.chat-input button {
+  padding:10px 14px;
+  border:none;
+  border-radius:6px;
+  background:#2563eb;
+  color:white;
 }
 
-.city-results div {
-  background:#111827;
-  padding:6px;
-  cursor:pointer;
+.section {
+  display:none;
+  border:1px solid #1f2937;
+  border-radius:10px;
+  padding:14px;
+  margin-bottom:16px;
 }
-.city-results div:hover { background:#1f2937; }
 
-.plus-btn {
-  position: fixed;
-  bottom: 20px;
-  left: 20px;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  font-size: 22px;
+input, select {
+  height:38px;
+  padding:6px 8px;
+  border-radius:6px;
+  border:none;
+}
+
+.filters {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-bottom:10px;
+}
+
+.result {
+  background:white;
+  color:black;
+  border-radius:8px;
+  padding:12px;
+  margin-top:10px;
+}
+
+.actions {
+  margin-top:10px;
+  display:flex;
+  gap:8px;
+}
+
+.plus {
+  position:fixed;
+  bottom:20px;
+  left:20px;
+  width:46px;
+  height:46px;
+  border-radius:50%;
+  background:#2563eb;
+  color:white;
+  font-size:24px;
+  border:none;
 }
 </style>
 </head>
@@ -118,25 +113,25 @@ button {
 
 <header>✈️ Nandi Travel AI</header>
 
-<div class="container">
-
 <div class="main">
 
-<div class="chat-box">
-  Hi 👋 How can I help you today?
-  <br><br>
-  <button onclick="setFare('public')">Public Fare</button>
-  <button onclick="setFare('corporate')">Corporate Fare</button>
+<!-- CHAT -->
+<div class="chat">
+  <div class="chat-log" id="chatLog">
+    Hi 👋 How can I help you today?
+  </div>
+  <div class="chat-input">
+    <input id="chatInput" placeholder="Ask me about flights or hotels">
+    <button onclick="sendChat()">Send</button>
+  </div>
 </div>
 
 <!-- FLIGHTS -->
-<div id="flights">
+<div id="flights" class="section">
 <h3>Flights</h3>
 
 <div class="filters">
-<input id="fromCity" placeholder="From city" oninput="searchCity(this.value)">
-<div id="cityResults" class="city-results"></div>
-
+<input placeholder="From city">
 <input placeholder="To city">
 <input type="date">
 <input type="date">
@@ -147,90 +142,106 @@ button {
 <option>First Class</option>
 </select>
 
-<input type="range" min="10000" max="100000" step="1000" oninput="priceLbl.innerText=this.value">
-<span id="priceLbl">50000</span>
-
 <select>
 <option>Non-stop</option>
 <option>1 Stop</option>
 </select>
+
+<input type="range" min="10000" max="100000" step="1000" id="price">
 </div>
 
-<button class="primary" onclick="renderResult()">Search Flights</button>
-</div>
+<button onclick="searchFlight()">Search Flights</button>
 
-<div id="resultCard" class="card"></div>
+<div id="flightResult"></div>
 
-<div style="margin-top:10px">
+<div class="actions">
+<button onclick="toggleFare()">Public ↔ Corporate</button>
 <button onclick="exportPDF()">Export PDF</button>
 <button onclick="saveDraft()">Save Draft</button>
 <button onclick="loadDraft()">Load Draft</button>
 </div>
-
 </div>
 
-<!-- SUPPORT -->
-<div class="support">
-<div class="support-header">💬 Customer Support</div>
-<div class="support-body">Hi 👋 How can I help you?</div>
-<div class="support-input">
-<input placeholder="Message...">
-<button class="primary">Send</button>
-</div>
+<!-- HOTELS -->
+<div id="hotels" class="section">
+<h3>Hotels</h3>
+<p>Hotel flow placeholder (locked for next phase)</p>
 </div>
 
 </div>
 
-<button class="plus-btn primary" onclick="toggleFlights()">+</button>
+<button class="plus" onclick="plusClick()">+</button>
 
 <script>
-let fareMode="public";
-let fares={
+let clickCount=0;
+let fare="public";
+
+const prices={
  public:{base:28400,gst:1420},
  corporate:{base:26200,gst:1310}
 };
 
-function setFare(m){fareMode=m;renderResult();}
-
-function renderResult(){
- let f=fares[fareMode];
- document.getElementById("resultCard").innerHTML=
- `<b>Air India</b><br>
- ₹${f.base+f.gst}<br>
- <small>Base ₹${f.base} + GST ₹${f.gst}</small>`;
+function plusClick(){
+ clickCount++;
+ setTimeout(()=>{
+  if(clickCount===1){
+    showSection("flights");
+  } else if(clickCount===2){
+    showSection("hotels");
+  }
+  clickCount=0;
+ },300);
 }
 
-async function searchCity(q){
- if(q.length<3)return;
- let r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}`);
- let d=await r.json();
- cityResults.innerHTML=d.slice(0,5).map(c=>`<div onclick="selectCity('${c.display_name}')">${c.display_name}</div>`).join("");
+function showSection(id){
+ document.getElementById("flights").style.display="none";
+ document.getElementById("hotels").style.display="none";
+ document.getElementById(id).style.display="block";
 }
-function selectCity(v){fromCity.value=v;cityResults.innerHTML="";}
+
+function sendChat(){
+ const v=chatInput.value.trim();
+ if(!v) return;
+ chatLog.innerHTML+=`<div><b>You:</b> ${v}</div>`;
+ chatLog.innerHTML+=`<div><b>AI:</b> Sure 👍 Click + to start booking.</div>`;
+ chatInput.value="";
+}
+
+function searchFlight(){
+ const p=prices[fare];
+ flightResult.innerHTML=`
+ <div class="result">
+ <b>Air India</b><br>
+ ₹${p.base+p.gst}<br>
+ <small>Base ₹${p.base} + GST ₹${p.gst}</small>
+ </div>`;
+}
+
+function toggleFare(){
+ fare = fare==="public" ? "corporate" : "public";
+ searchFlight();
+}
 
 function exportPDF(){
  const {jsPDF}=window.jspdf;
  const pdf=new jsPDF();
- let f=fares[fareMode];
- pdf.text("Nandi Corporate Travel – Itinerary",20,20);
- pdf.text(`Fare: ${fareMode}`,20,35);
- pdf.text(`Base: ₹${f.base}`,20,50);
- pdf.text(`GST: ₹${f.gst}`,20,60);
- pdf.text(`Total: ₹${f.base+f.gst}`,20,70);
- pdf.save("itinerary.pdf");
+ const p=prices[fare];
+ pdf.text("Nandi Travel AI – Itinerary",20,20);
+ pdf.text(`Fare: ${fare}`,20,35);
+ pdf.text(`Base: ₹${p.base}`,20,45);
+ pdf.text(`GST: ₹${p.gst}`,20,55);
+ pdf.text(`Total: ₹${p.base+p.gst}`,20,65);
+ pdf.save("nandi-itinerary.pdf");
 }
 
 function saveDraft(){
- localStorage.setItem("nandiDraft",fareMode);
+ localStorage.setItem("fare",fare);
  alert("Draft saved");
 }
-function loadDraft(){
- let d=localStorage.getItem("nandiDraft");
- if(d){fareMode=d;renderResult();}
-}
 
-function toggleFlights(){
- document.getElementById("flights").scrollIntoView({behavior:"smooth"});
+function loadDraft(){
+ const d=localStorage.getItem("fare");
+ if(d){fare=d;searchFlight();}
 }
 </script>
 
