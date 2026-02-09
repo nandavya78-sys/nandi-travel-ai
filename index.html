@@ -268,4 +268,106 @@ function clearDraft(){
 }
 </script>
 
+<script>
+/* ===============================
+   GLOBAL STATE (SAFE)
+================================ */
+let chatMessages = document.getElementById("chatMessages");
+let chatInput = document.getElementById("chatInput");
+let sendBtn = document.getElementById("sendBtn");
+let plusBtn = document.getElementById("plusBtn");
+let plusMenu = document.getElementById("plusMenu");
+
+/* ===============================
+   CHAT CORE
+================================ */
+function addMessage(text, sender="user"){
+  const div = document.createElement("div");
+  div.className = sender === "user" ? "chat-user" : "chat-bot";
+  div.innerText = text;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function sendMessage(){
+  const text = chatInput.value.trim();
+  if(!text) return;
+
+  addMessage(text, "user");
+  chatInput.value = "";
+
+  // Demo AI response (locked simple)
+  setTimeout(() => {
+    addMessage("Got it 👍 Use + to search Flights or Hotels.", "bot");
+  }, 400);
+}
+
+/* ===============================
+   EVENT BINDINGS (THIS WAS MISSING)
+================================ */
+
+// Send button
+if(sendBtn){
+  sendBtn.onclick = sendMessage;
+}
+
+// Enter key
+if(chatInput){
+  chatInput.addEventListener("keydown", e => {
+    if(e.key === "Enter"){
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+}
+
+/* ===============================
+   PLUS BUTTON FLOW
+================================ */
+let plusState = 0;
+
+function togglePlus(){
+  plusState++;
+  plusMenu.style.display = "block";
+
+  if(plusState === 1){
+    plusMenu.innerHTML = `
+      <button onclick="openFlights()">✈ Flights</button>
+      <button onclick="openHotels()">🏨 Hotels</button>
+    `;
+  }
+
+  if(plusState > 1) plusState = 0;
+}
+
+function openFlights(){
+  document.getElementById("flightsSection").scrollIntoView({behavior:"smooth"});
+  plusMenu.style.display = "none";
+}
+
+function openHotels(){
+  document.getElementById("hotelsSection").scrollIntoView({behavior:"smooth"});
+  plusMenu.style.display = "none";
+}
+
+// Attach +
+if(plusBtn){
+  plusBtn.onclick = togglePlus;
+}
+
+/* ===============================
+   SAFETY LOG
+================================ */
+console.log("✅ Chat + Plus button wired successfully");
+</script>
+
+<div id="chatMessages"></div>
+<input id="chatInput" />
+<button id="sendBtn">Send</button>
+
+<button id="plusBtn">+</button>
+<div id="plusMenu"></div>
+
+<section id="flightsSection"></section>
+<section id="hotelsSection"></section>
 
