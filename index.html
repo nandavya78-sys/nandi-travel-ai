@@ -1,54 +1,102 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>Nandi Travel AI</title>
 <style>
-body {
-  margin:0;
-  font-family: Arial, sans-serif;
-  background: #050b1c;
-  color:white;
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:#0b1220;
+    color:white;
 }
-header {
-  padding:15px;
-  font-size:20px;
-  font-weight:bold;
+header{
+    padding:14px 20px;
+    font-size:20px;
+    border-bottom:1px solid #1f2937;
 }
-#chat {
-  max-width:600px;
-  margin:40px auto;
-  text-align:center;
+#chat{
+    max-width:900px;
+    margin:40px auto 120px;
 }
-input, select, button {
-  padding:10px;
-  margin:5px;
-  border-radius:6px;
-  border:none;
+.message{
+    background:#111827;
+    padding:16px;
+    border-radius:10px;
+    margin-bottom:14px;
 }
-button {
-  background:#2563eb;
-  color:white;
-  cursor:pointer;
+.controls{
+    display:flex;
+    gap:10px;
+    margin-bottom:20px;
 }
-.card {
-  background:white;
-  color:black;
-  padding:15px;
-  margin:15px auto;
-  max-width:600px;
-  border-radius:10px;
+button{
+    padding:8px 14px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
 }
-#plus {
-  position:fixed;
-  bottom:20px;
-  left:20px;
-  width:50px;
-  height:50px;
-  border-radius:50%;
-  font-size:24px;
+.primary{background:#2563eb;color:white}
+.secondary{background:#374151;color:white}
+
+.form{
+    display:none;
+    background:#020617;
+    padding:16px;
+    border-radius:10px;
+    margin-bottom:20px;
 }
-.hidden { display:none; }
+input,select{
+    padding:8px;
+    border-radius:6px;
+    border:none;
+}
+
+.results{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+    gap:16px;
+}
+
+.card{
+    background:white;
+    color:black;
+    padding:14px;
+    border-radius:10px;
+}
+
+footer{
+    position:fixed;
+    bottom:0;
+    width:100%;
+    background:#020617;
+    padding:12px;
+    display:flex;
+    gap:10px;
+}
+footer input{
+    flex:1;
+}
+
+#plus{
+    position:fixed;
+    bottom:80px;
+    left:20px;
+    background:#2563eb;
+    width:48px;
+    height:48px;
+    border-radius:50%;
+    font-size:24px;
+    color:white;
+}
+#plusMenu{
+    position:fixed;
+    bottom:140px;
+    left:20px;
+    display:none;
+    flex-direction:column;
+    gap:8px;
+}
 </style>
 </head>
 
@@ -57,113 +105,112 @@ button {
 <header>✈️ Nandi Travel AI</header>
 
 <div id="chat">
-  <h3>Hi 👋 How can I help you today?</h3>
-  <input id="chatInput" placeholder="Ask about flights or hotels" style="width:80%">
-  <button onclick="sendChat()">Send</button>
+    <div class="message">Hi 👋 How can I help you today?</div>
+
+    <div id="flightForm" class="form">
+        <h3>Flights</h3>
+        <input placeholder="From city">
+        <input placeholder="To city">
+        <input type="date">
+        <input type="date">
+        <select>
+            <option>Economy</option>
+            <option>Business</option>
+            <option>First</option>
+        </select>
+        <button class="primary" onclick="loadFlights()">Search Flights</button>
+    </div>
+
+    <div id="hotelForm" class="form">
+        <h3>Hotels</h3>
+        <input placeholder="City">
+        <select>
+            <option>3 Star</option>
+            <option>4 Star</option>
+            <option>5 Star</option>
+        </select>
+        <button class="primary" onclick="loadHotels()">Search Hotels</button>
+    </div>
+
+    <div class="controls">
+        <button class="secondary" onclick="toggleFare('public')">Public Fare</button>
+        <button class="secondary" onclick="toggleFare('corporate')">Corporate Fare</button>
+        <button class="secondary" onclick="exportPDF()">Export PDF</button>
+    </div>
+
+    <div id="results" class="results"></div>
 </div>
 
-<!-- FLIGHTS -->
-<div id="flights" class="hidden">
-  <div class="card">
-    <h3>Flights</h3>
-    <input placeholder="From city">
-    <input placeholder="To city"><br>
-    <input type="date">
-    <input type="date"><br>
-    <select>
-      <option>Economy</option>
-      <option>Business</option>
-      <option>First</option>
-    </select>
-    <select>
-      <option>Non-stop</option>
-      <option>1 Stop</option>
-    </select>
-    <button onclick="loadFlights()">Search Flights</button>
-  </div>
+<div id="plusMenu">
+    <button onclick="showFlights()">✈ Flights</button>
+    <button onclick="showHotels()">🏨 Hotels</button>
 </div>
-
-<!-- HOTELS -->
-<div id="hotels" class="hidden">
-  <div class="card">
-    <h3>Hotels</h3>
-    <input placeholder="City"><br>
-    Stars:
-    <select>
-      <option>3+</option>
-      <option>4+</option>
-      <option>5</option>
-    </select>
-    Distance (miles):
-    <input type="number" value="10"><br>
-    <button onclick="loadHotels()">Search Hotels</button>
-  </div>
-</div>
-
-<!-- RESULTS -->
-<div id="results"></div>
 
 <button id="plus" onclick="togglePlus()">+</button>
 
+<footer>
+    <input placeholder="Ask me about flights or hotels">
+    <button class="primary">Send</button>
+</footer>
+
 <script>
-let mode = "flights";
+let fareMode="public";
 
 function togglePlus(){
-  document.getElementById("flights").classList.add("hidden");
-  document.getElementById("hotels").classList.add("hidden");
-
-  if(mode === "flights"){
-    document.getElementById("flights").classList.remove("hidden");
-    mode = "hotels";
-  } else {
-    document.getElementById("hotels").classList.remove("hidden");
-    mode = "flights";
-  }
+    let m=document.getElementById("plusMenu");
+    m.style.display=m.style.display==="flex"?"none":"flex";
 }
 
-function sendChat(){
-  alert("AI chat hook ready (demo mode)");
+function showFlights(){
+    document.getElementById("flightForm").style.display="block";
+    document.getElementById("hotelForm").style.display="none";
+    document.getElementById("plusMenu").style.display="none";
+}
+function showHotels(){
+    document.getElementById("hotelForm").style.display="block";
+    document.getElementById("flightForm").style.display="none";
+    document.getElementById("plusMenu").style.display="none";
+}
+
+function toggleFare(f){
+    fareMode=f;
 }
 
 function loadFlights(){
-  fetch("/flights",{method:"POST"})
-  .then(r=>r.json())
-  .then(d=>{
-    let f=d[0];
-    document.getElementById("results").innerHTML=`
-    <div class="card">
-      <b>${f.airline}</b><br>
-      Public: ₹${f.public}<br>
-      Corporate: ₹${f.corporate}<br>
-      GST: ₹${f.gst}<br><br>
-      <button onclick="exportPDF()">Export PDF</button>
-      <button onclick="saveDraft()">Save Draft</button>
-    </div>`;
-  });
+fetch("/flights").then(r=>r.json()).then(data=>{
+    let out="";
+    data.forEach(f=>{
+        let price=fareMode==="public"?f.public:f.corporate;
+        out+=`
+        <div class="card">
+            <b>${f.airline}</b><br>
+            ${f.stops} | ${f.class}<br><br>
+            ₹${price}<br>
+            GST ₹${f.gst}
+        </div>`;
+    });
+    document.getElementById("results").innerHTML=out;
+});
 }
 
 function loadHotels(){
-  fetch("/hotels",{method:"POST"})
-  .then(r=>r.json())
-  .then(d=>{
-    let h=d[0];
-    document.getElementById("results").innerHTML=`
-    <div class="card">
-      <b>${h.name}</b><br>
-      ⭐ ${h.stars}<br>
-      ${h.distance} miles<br>
-      ₹${h.price}
-    </div>`;
-  });
-}
-
-function saveDraft(){
-  localStorage.setItem("draft", document.getElementById("results").innerHTML);
-  alert("Draft saved");
+fetch("/hotels").then(r=>r.json()).then(data=>{
+    let out="";
+    data.forEach(h=>{
+        out+=`
+        <div class="card">
+            <b>${h.name}</b><br>
+            ⭐ ${h.stars}<br>
+            ${h.distance} km<br><br>
+            ₹${h.price}
+        </div>`;
+    });
+    document.getElementById("results").innerHTML=out;
+});
 }
 
 function exportPDF(){
-  window.print();
+    alert("Demo: PDF export hooked (next step)");
 }
 </script>
 
