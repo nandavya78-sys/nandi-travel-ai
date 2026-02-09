@@ -23,13 +23,13 @@ header {
 
 #chat {
   padding: 16px;
-  min-height: 40vh;
+  min-height: 45vh;
 }
 
 .bot, .user {
   max-width: 85%;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: 14px;
   margin-bottom: 12px;
 }
 
@@ -53,13 +53,13 @@ button {
   color: white;
   border: none;
   padding: 10px 14px;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
 }
 
 input, select {
   padding: 10px;
-  border-radius: 8px;
+  border-radius: 10px;
   border: none;
   width: 100%;
 }
@@ -69,29 +69,40 @@ input, select {
   padding: 12px;
 }
 
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px,1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
 .card {
-  background: #020617;
-  border: 1px solid #1e293b;
-  border-radius: 12px;
+  background: #ffffff;
+  color: #020617;
+  border-radius: 14px;
   padding: 14px;
-  margin-top: 12px;
+  margin-top: 14px;
 }
 
 .card h4 {
   margin: 0 0 6px;
 }
 
-.price {
-  font-size: 18px;
-  font-weight: 700;
-  color: #38bdf8;
+.meta {
+  font-size: 14px;
+  color: #475569;
 }
 
-.filters {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px,1fr));
-  gap: 8px;
-  margin-top: 8px;
+.price {
+  margin-top: 6px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0ea5e9;
+}
+
+.loading {
+  font-style: italic;
+  opacity: 0.8;
 }
 
 /* Mobile polish */
@@ -106,7 +117,7 @@ input, select {
 <header>Nandi’s Travel AI (Demo)</header>
 
 <div id="chat">
-  <div class="bot">Hi there 👋 Use + to search flights or hotels.</div>
+  <div class="bot">Hi there 👋 How can I help you today?</div>
 </div>
 
 <div class="controls">
@@ -147,6 +158,14 @@ input, select {
       <option value="5">5★</option>
     </select>
 
+    <select id="hotelDistance">
+      <option value="">Any distance</option>
+      <option value="5">1–5 miles</option>
+      <option value="10">5–10 miles</option>
+      <option value="20">10–20 miles</option>
+      <option value="30">20–30 miles</option>
+    </select>
+
     <input id="hotelPrice" type="number" placeholder="Max / night" />
   </div>
 
@@ -172,19 +191,30 @@ function addUser(text) {
 function openFlights() {
   flightsForm.style.display = "block";
   hotelsForm.style.display = "none";
-  addBot("Please enter flight details ✈️");
+  addBot("Sure ✈️ Please enter your flight details.");
 }
 
 function openHotels() {
   hotelsForm.style.display = "block";
   flightsForm.style.display = "none";
-  addBot("Please enter hotel details 🏨");
+  addBot("Got it 🏨 Please enter hotel details.");
 }
 
 function sendMsg() {
   if (!msg.value) return;
+  const text = msg.value.toLowerCase();
   addUser(msg.value);
   msg.value = "";
+
+  if (["hi","hello","hey"].includes(text)) {
+    addBot("Hello 😊 What are you planning today?");
+  } else if (text.includes("flight")) {
+    addBot("I can help with flights ✈️ Click the Flights button.");
+  } else if (text.includes("hotel")) {
+    addBot("Looking for hotels 🏨 Click the Hotels button.");
+  } else {
+    addBot("Sure 👍 Tell me what you’re looking for.");
+  }
 }
 
 /* Demo data */
@@ -195,44 +225,54 @@ const flights = [
 ];
 
 const hotels = [
-  {name:"The Ritz London", stars:5, price:42000},
-  {name:"Park Plaza Westminster", stars:4, price:18500},
-  {name:"Premier Inn City", stars:3, price:9200}
+  {name:"The Ritz London", stars:5, price:42000, distance:2},
+  {name:"Park Plaza Westminster", stars:4, price:18500, distance:6},
+  {name:"Premier Inn City", stars:3, price:9200, distance:12}
 ];
 
 function searchFlights() {
-  const max = flightPrice.value;
-  const stop = flightStops.value;
+  addBot('<span class="loading">Searching flights…</span>');
+  setTimeout(() => {
+    const max = flightPrice.value;
+    const stop = flightStops.value;
 
-  flights
-    .filter(f => (!max || f.price <= max) && (!stop || f.stops === stop))
-    .forEach(f => {
-      addBot(`
-        <div class="card">
-          <h4>${f.airline}</h4>
-          ${f.route}<br>
-          ${f.stops}<br>
-          <div class="price">₹${f.price}</div>
-        </div>
-      `);
-    });
+    flights
+      .filter(f => (!max || f.price <= max) && (!stop || f.stops === stop))
+      .forEach(f => {
+        addBot(`
+          <div class="card">
+            <h4>${f.airline}</h4>
+            <div class="meta">${f.route} • ${f.stops}</div>
+            <div class="price">₹${f.price}</div>
+          </div>
+        `);
+      });
+  }, 800);
 }
 
 function searchHotels() {
-  const max = hotelPrice.value;
-  const stars = hotelStars.value;
+  addBot('<span class="loading">Finding hotels…</span>');
+  setTimeout(() => {
+    const max = hotelPrice.value;
+    const stars = hotelStars.value;
+    const dist = hotelDistance.value;
 
-  hotels
-    .filter(h => (!max || h.price <= max) && (!stars || h.stars == stars))
-    .forEach(h => {
-      addBot(`
-        <div class="card">
-          <h4>${h.name}</h4>
-          ⭐ ${h.stars}<br>
-          <div class="price">₹${h.price} / night</div>
-        </div>
-      `);
-    });
+    hotels
+      .filter(h =>
+        (!max || h.price <= max) &&
+        (!stars || h.stars == stars) &&
+        (!dist || h.distance <= dist)
+      )
+      .forEach(h => {
+        addBot(`
+          <div class="card">
+            <h4>${h.name}</h4>
+            <div class="meta">${h.stars}★ • ${h.distance} miles from center</div>
+            <div class="price">₹${h.price} / night</div>
+          </div>
+        `);
+      });
+  }, 800);
 }
 </script>
 
