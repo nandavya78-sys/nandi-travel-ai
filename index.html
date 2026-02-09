@@ -14,100 +14,91 @@ body {
 }
 
 header {
-  padding: 14px;
+  padding: 12px;
   text-align: center;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   background: #020617;
 }
 
 #chat {
-  padding: 16px;
-  min-height: 45vh;
+  padding: 14px;
 }
 
 .bot, .user {
   max-width: 85%;
-  padding: 12px 14px;
-  border-radius: 14px;
-  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  margin-bottom: 10px;
 }
 
-.bot {
-  background: #111827;
-}
-
-.user {
-  background: #2563eb;
-  margin-left: auto;
-}
+.bot { background: #111827; }
+.user { background: #2563eb; margin-left: auto; }
 
 .controls, .input-bar {
   display: flex;
-  gap: 8px;
-  padding: 12px;
+  gap: 6px;
+  padding: 10px;
 }
 
 button {
   background: #2563eb;
   color: white;
   border: none;
-  padding: 10px 14px;
-  border-radius: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
   cursor: pointer;
+  font-size: 14px;
 }
 
 input, select {
-  padding: 10px;
-  border-radius: 10px;
+  padding: 8px;
+  border-radius: 8px;
   border: none;
-  width: 100%;
+  font-size: 14px;
 }
 
 .form {
   display: none;
-  padding: 12px;
+  padding: 10px;
 }
 
-.filters {
+.row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px,1fr));
-  gap: 8px;
-  margin-top: 8px;
+  gap: 6px;
 }
 
 .card {
   background: #ffffff;
   color: #020617;
-  border-radius: 14px;
-  padding: 14px;
-  margin-top: 14px;
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 10px;
 }
 
-.card h4 {
-  margin: 0 0 6px;
-}
+.card h4 { margin: 0 0 4px; }
 
 .meta {
-  font-size: 14px;
+  font-size: 13px;
   color: #475569;
 }
 
 .price {
   margin-top: 6px;
-  font-size: 18px;
   font-weight: 700;
-  color: #0ea5e9;
 }
+
+.public { color: #0ea5e9; }
+.corporate { color: #16a34a; }
 
 .loading {
+  opacity: 0.7;
   font-style: italic;
-  opacity: 0.8;
 }
 
-/* Mobile polish */
-@media (max-width: 600px) {
-  .bot, .user { max-width: 95%; }
+@media (max-width:600px) {
+  .bot,.user { max-width:95%; }
 }
 </style>
 </head>
@@ -127,18 +118,28 @@ input, select {
 
 <!-- FLIGHTS -->
 <div id="flightsForm" class="form">
-  <input placeholder="From city" />
-  <input placeholder="To city" />
-  <input type="date" />
+  <div class="row">
+    <input placeholder="From" />
+    <input placeholder="To" />
+    <input type="date" />
+    <input type="date" />
+  </div>
 
-  <div class="filters">
+  <div class="row">
+    <select>
+      <option>Economy</option>
+      <option>Premium Economy</option>
+      <option>Business</option>
+      <option>First</option>
+    </select>
+
     <select id="flightStops">
       <option value="">Any stops</option>
       <option>Non-stop</option>
       <option>1 Stop</option>
     </select>
 
-    <input id="flightPrice" type="number" placeholder="Max price" />
+    <input id="flightPrice" type="number" placeholder="Max ₹" />
   </div>
 
   <button onclick="searchFlights()">Search Flights</button>
@@ -146,27 +147,29 @@ input, select {
 
 <!-- HOTELS -->
 <div id="hotelsForm" class="form">
-  <input placeholder="City" />
-  <input type="date" />
-  <input type="date" />
+  <div class="row">
+    <input placeholder="City" />
+    <input type="date" />
+    <input type="date" />
+  </div>
 
-  <div class="filters">
+  <div class="row">
     <select id="hotelStars">
-      <option value="">Any stars</option>
-      <option value="3">3★</option>
+      <option value="">Any ★</option>
+      <option value="3">≤3★</option>
       <option value="4">4★</option>
       <option value="5">5★</option>
     </select>
 
     <select id="hotelDistance">
       <option value="">Any distance</option>
-      <option value="5">1–5 miles</option>
-      <option value="10">5–10 miles</option>
-      <option value="20">10–20 miles</option>
-      <option value="30">20–30 miles</option>
+      <option value="5">1–5 mi</option>
+      <option value="10">5–10 mi</option>
+      <option value="20">10–20 mi</option>
+      <option value="30">20–30 mi</option>
     </select>
 
-    <input id="hotelPrice" type="number" placeholder="Max / night" />
+    <input id="hotelPrice" type="number" placeholder="Max ₹/night" />
   </div>
 
   <button onclick="searchHotels()">Search Hotels</button>
@@ -178,101 +181,70 @@ input, select {
 </div>
 
 <script>
-function addBot(html) {
-  chat.innerHTML += `<div class="bot">${html}</div>`;
-  chat.scrollTop = chat.scrollHeight;
+function addBot(html){chat.innerHTML+=`<div class="bot">${html}</div>`;}
+function addUser(t){chat.innerHTML+=`<div class="user">${t}</div>`;}
+
+function openFlights(){
+  flightsForm.style.display="block";
+  hotelsForm.style.display="none";
+  addBot("Sure ✈️ Enter flight details.");
 }
 
-function addUser(text) {
-  chat.innerHTML += `<div class="user">${text}</div>`;
-  chat.scrollTop = chat.scrollHeight;
+function openHotels(){
+  hotelsForm.style.display="block";
+  flightsForm.style.display="none";
+  addBot("Sure 🏨 Enter hotel details.");
 }
 
-function openFlights() {
-  flightsForm.style.display = "block";
-  hotelsForm.style.display = "none";
-  addBot("Sure ✈️ Please enter your flight details.");
+function sendMsg(){
+  if(!msg.value) return;
+  const t=msg.value.toLowerCase();
+  addUser(msg.value); msg.value="";
+  if(["hi","hello","hey"].includes(t)) addBot("Hello 😊");
+  else addBot("Use Flights or Hotels to search.");
 }
 
-function openHotels() {
-  hotelsForm.style.display = "block";
-  flightsForm.style.display = "none";
-  addBot("Got it 🏨 Please enter hotel details.");
-}
-
-function sendMsg() {
-  if (!msg.value) return;
-  const text = msg.value.toLowerCase();
-  addUser(msg.value);
-  msg.value = "";
-
-  if (["hi","hello","hey"].includes(text)) {
-    addBot("Hello 😊 What are you planning today?");
-  } else if (text.includes("flight")) {
-    addBot("I can help with flights ✈️ Click the Flights button.");
-  } else if (text.includes("hotel")) {
-    addBot("Looking for hotels 🏨 Click the Hotels button.");
-  } else {
-    addBot("Sure 👍 Tell me what you’re looking for.");
-  }
-}
-
-/* Demo data */
-const flights = [
-  {airline:"Air India", route:"BLR → LHR", stops:"Non-stop", price:28400},
-  {airline:"British Airways", route:"BLR → LHR", stops:"1 Stop", price:31800},
-  {airline:"Lufthansa", route:"BLR → LHR", stops:"1 Stop", price:34600}
+/* Demo data with public vs corporate */
+const flights=[
+ {airline:"Air India",route:"BLR → LHR",stops:"Non-stop",public:28400,corp:26800},
+ {airline:"BA",route:"BLR → LHR",stops:"1 Stop",public:31800,corp:30500}
 ];
 
-const hotels = [
-  {name:"The Ritz London", stars:5, price:42000, distance:2},
-  {name:"Park Plaza Westminster", stars:4, price:18500, distance:6},
-  {name:"Premier Inn City", stars:3, price:9200, distance:12}
+const hotels=[
+ {name:"Ritz London",stars:5,distance:2,public:42000,corp:39000},
+ {name:"Park Plaza",stars:4,distance:6,public:18500,corp:17000}
 ];
 
-function searchFlights() {
-  addBot('<span class="loading">Searching flights…</span>');
-  setTimeout(() => {
-    const max = flightPrice.value;
-    const stop = flightStops.value;
-
-    flights
-      .filter(f => (!max || f.price <= max) && (!stop || f.stops === stop))
-      .forEach(f => {
-        addBot(`
-          <div class="card">
-            <h4>${f.airline}</h4>
-            <div class="meta">${f.route} • ${f.stops}</div>
-            <div class="price">₹${f.price}</div>
-          </div>
-        `);
-      });
-  }, 800);
+function searchFlights(){
+  addBot("<span class='loading'>Searching flights…</span>");
+  setTimeout(()=>{
+    flights.forEach(f=>{
+      addBot(`
+        <div class="card">
+          <h4>${f.airline}</h4>
+          <div class="meta">${f.route} • ${f.stops}</div>
+          <div class="price public">Public: ₹${f.public}</div>
+          <div class="price corporate">Corporate: ₹${f.corp}</div>
+        </div>
+      `);
+    });
+  },700);
 }
 
-function searchHotels() {
-  addBot('<span class="loading">Finding hotels…</span>');
-  setTimeout(() => {
-    const max = hotelPrice.value;
-    const stars = hotelStars.value;
-    const dist = hotelDistance.value;
-
-    hotels
-      .filter(h =>
-        (!max || h.price <= max) &&
-        (!stars || h.stars == stars) &&
-        (!dist || h.distance <= dist)
-      )
-      .forEach(h => {
-        addBot(`
-          <div class="card">
-            <h4>${h.name}</h4>
-            <div class="meta">${h.stars}★ • ${h.distance} miles from center</div>
-            <div class="price">₹${h.price} / night</div>
-          </div>
-        `);
-      });
-  }, 800);
+function searchHotels(){
+  addBot("<span class='loading'>Finding hotels…</span>");
+  setTimeout(()=>{
+    hotels.forEach(h=>{
+      addBot(`
+        <div class="card">
+          <h4>${h.name}</h4>
+          <div class="meta">${h.stars}★ • ${h.distance} mi</div>
+          <div class="price public">Public: ₹${h.public}</div>
+          <div class="price corporate">Corporate: ₹${h.corp}</div>
+        </div>
+      `);
+    });
+  },700);
 }
 </script>
 
