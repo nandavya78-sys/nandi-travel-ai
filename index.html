@@ -13,28 +13,30 @@ body{
   font-family:system-ui;
 }
 header{
-  padding:12px 16px;
+  padding:14px;
   font-weight:600;
 }
 .container{
   display:flex;
-  height:calc(100vh - 48px);
+  height:calc(100vh - 52px);
 }
-#cart{
-  width:260px;
-  background:#111;
-  padding:12px;
-  overflow:auto;
-}
-#cart h3{margin-top:0}
 #main{
   flex:1;
   display:flex;
   flex-direction:column;
 }
+#cart{
+  width:320px;
+  background:#111;
+  padding:14px;
+  overflow:auto;
+  border-left:1px solid #222;
+}
+#cart h3{margin-top:0}
+
 #chatArea{
   flex:1;
-  padding:20px;
+  padding:18px;
   overflow:auto;
 }
 .msg{margin:10px 0}
@@ -49,45 +51,47 @@ header{
 }
 #chatInput{flex:1;padding:10px}
 
-button{padding:6px 10px;cursor:pointer}
+button{
+  padding:6px 10px;
+  cursor:pointer;
+}
+.card{
+  background:#fff;
+  color:#000;
+  padding:12px;
+  margin:10px 0;
+  border-radius:6px;
+}
+.panel{
+  display:none;
+  background:#111;
+  padding:14px;
+  margin:10px 0;
+  border-radius:8px;
+}
 
 #plusBtn{
   position:fixed;
   bottom:80px;
   left:20px;
-  border-radius:50%;
   width:46px;
   height:46px;
+  border-radius:50%;
   font-size:22px;
 }
-
 #toolMenu{
   position:fixed;
   bottom:140px;
   left:20px;
   display:none;
   background:#111;
-  padding:8px;
+  padding:10px;
   border-radius:8px;
 }
 #toolMenu button{
   display:block;
   width:100%;
   margin-bottom:6px;
-}
-
-.panel{
-  display:none;
-  background:#111;
-  padding:14px;
-  margin:12px 0;
-}
-
-.card{
-  background:#fff;
-  color:#000;
-  padding:10px;
-  margin:8px 0;
 }
 </style>
 </head>
@@ -98,27 +102,17 @@ button{padding:6px 10px;cursor:pointer}
 
 <div class="container">
 
-<!-- CART / ITINERARY -->
-<div id="cart">
-  <h3>🛒 Itinerary</h3>
-  <div id="cartItems">No items added</div><br>
-  <button onclick="saveDraft()">Save Draft</button>
-  <button onclick="loadDraft()">Load Draft</button>
-  <button onclick="exportPDF()">Export PDF</button>
-</div>
-
-<!-- MAIN -->
 <div id="main">
 
 <div id="chatArea">
   <div class="msg bot">
     Hi 👋 I’m your travel assistant.<br><br>
-    Use chat or click <b>+</b> to search Flights or Hotels.
+    Click <b>+</b> to search Flights or Hotels, add them to your itinerary, and export a full PDF.
   </div>
 
   <!-- FLIGHTS -->
   <div id="flightPanel" class="panel">
-    <h3>✈ Flights</h3>
+    <h3>✈ Flight Search</h3>
     <input placeholder="From city"><br><br>
     <input placeholder="To city"><br><br>
     <input type="date"><br><br>
@@ -134,7 +128,7 @@ button{padding:6px 10px;cursor:pointer}
 
   <!-- HOTELS -->
   <div id="hotelPanel" class="panel">
-    <h3>🏨 Hotels</h3>
+    <h3>🏨 Hotel Search</h3>
     <input placeholder="City"><br><br>
     <input type="date"><br><br>
     <input type="date"><br><br>
@@ -155,9 +149,18 @@ button{padding:6px 10px;cursor:pointer}
 </div>
 
 </div>
+
+<!-- CART -->
+<div id="cart">
+  <h3>🛒 Itinerary</h3>
+  <div id="cartItems">No items added</div><br>
+  <button onclick="saveDraft()">Save Draft</button>
+  <button onclick="loadDraft()">Load Draft</button>
+  <button onclick="exportPDF()">Export PDF</button>
 </div>
 
-<!-- PLUS MENU -->
+</div>
+
 <button id="plusBtn">+</button>
 <div id="toolMenu">
   <button onclick="openFlights()">Flights</button>
@@ -166,10 +169,10 @@ button{padding:6px 10px;cursor:pointer}
 
 <script>
 const chatArea=document.getElementById("chatArea");
+const cartItems=document.getElementById("cartItems");
 const flightPanel=document.getElementById("flightPanel");
 const hotelPanel=document.getElementById("hotelPanel");
 const toolMenu=document.getElementById("toolMenu");
-const cartItems=document.getElementById("cartItems");
 
 let cart=[];
 
@@ -181,68 +184,77 @@ function botReply(t){
   chatArea.scrollTop=chatArea.scrollHeight;
 }
 
-function userMsg(t){
-  const d=document.createElement("div");
-  d.className="msg user";
-  d.innerText=t;
-  chatArea.appendChild(d);
-}
-
 function sendMsg(){
   const i=document.getElementById("chatInput");
   if(!i.value) return;
-  userMsg(i.value);
-  botReply(
-    "Sure 👍\n\n" +
-    "You can:\n" +
-    "• Search flights or hotels using +\n" +
-    "• Add results to itinerary\n" +
-    "• Export everything as PDF\n\n" +
-    "What would you like to do?"
-  );
+  chatArea.innerHTML+=`<div class="msg user">${i.value}</div>`;
+  botReply("Got it 👍\nYou can search flights or hotels using the + button.");
   i.value="";
 }
 
 document.getElementById("plusBtn").onclick=()=>{
-  toolMenu.style.display = toolMenu.style.display==="block"?"none":"block";
+  toolMenu.style.display=toolMenu.style.display==="block"?"none":"block";
 };
 
 function openFlights(){
   toolMenu.style.display="none";
   flightPanel.style.display="block";
   hotelPanel.style.display="none";
-  botReply("Let’s search flights ✈");
 }
-
 function openHotels(){
   toolMenu.style.display="none";
   hotelPanel.style.display="block";
   flightPanel.style.display="none";
-  botReply("Let’s search hotels 🏨");
 }
 
 function showFlights(){
   const r=document.getElementById("flightResults");
   r.innerHTML="";
-  ["Air India","IndiGo","Vistara","Akasa","BA","Lufthansa"].forEach(a=>{
+  for(let i=1;i<=6;i++){
+    const item={
+      type:"Flight",
+      title:`Air India AI10${i}`,
+      details:`BLR → DEL | Non-stop | A320`,
+      dates:"10 Mar 2026 – 10 Mar 2026",
+      base:24000,
+      gst:1200,
+      total:25200
+    };
     r.innerHTML+=`
       <div class="card">
-        ${a} – ₹25,000 (GST incl)
-        <button onclick="addCart('Flight: ${a}')">Add</button>
+        <b>${item.title}</b><br>
+        ${item.details}<br>
+        Date: ${item.dates}<br>
+        Base ₹${item.base} + GST ₹${item.gst}<br>
+        <b>Total ₹${item.total}</b><br>
+        <button onclick='addCart(${JSON.stringify(item)})'>Add to Cart</button>
       </div>`;
-  });
+  }
 }
 
 function showHotels(){
   const r=document.getElementById("hotelResults");
   r.innerHTML="";
-  ["Taj","ITC","Marriott","Hyatt","Hilton","Novotel"].forEach(h=>{
+  for(let i=1;i<=6;i++){
+    const item={
+      type:"Hotel",
+      title:`Taj Palace Room ${i}`,
+      details:`5★ | Deluxe Room | Connaught Place, Delhi`,
+      dates:"10 Mar 2026 – 12 Mar 2026",
+      base:8000,
+      gst:960,
+      total:8960
+    };
     r.innerHTML+=`
       <div class="card">
-        ${h} – ₹6,000/night
-        <button onclick="addCart('Hotel: ${h}')">Add</button>
+        <b>${item.title}</b><br>
+        ${item.details}<br>
+        Stay: ${item.dates}<br>
+        Base ₹${item.base} + GST ₹${item.gst}<br>
+        <b>Total ₹${item.total}</b><br>
+        <button onclick='addCart(${JSON.stringify(item)})'>Add to Cart</button>
       </div>`;
-  });
+  }
 }
 
 function addCart(i){
@@ -251,14 +263,14 @@ function addCart(i){
 }
 
 function renderCart(){
-  cartItems.innerHTML = cart.length
-    ? cart.map(i=>"• "+i).join("<br>")
-    : "No items added";
+  cartItems.innerHTML=cart.length?cart.map(i=>
+    `<div><b>${i.type}</b><br>${i.title}<br>${i.details}<br>${i.dates}<br>Total ₹${i.total}</div><hr>`
+  ).join(""):"No items added";
 }
 
 function saveDraft(){
   localStorage.setItem("nandiDraft",JSON.stringify(cart));
-  botReply("✅ Draft saved.");
+  botReply("Draft saved successfully ✅");
 }
 
 function loadDraft(){
@@ -269,7 +281,9 @@ function loadDraft(){
 function exportPDF(){
   const w=window.open("");
   w.document.write("<h1>Nandi Travel AI – Itinerary</h1>");
-  cart.forEach(i=>w.document.write("<p>"+i+"</p>"));
+  cart.forEach(i=>{
+    w.document.write(`<p><b>${i.type}</b><br>${i.title}<br>${i.details}<br>${i.dates}<br>Total ₹${i.total}</p>`);
+  });
   w.document.write("<p>GST Included</p>");
   w.print();
 }
